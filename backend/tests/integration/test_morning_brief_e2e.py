@@ -76,14 +76,20 @@ def _cleanup_quiz_results(supabase) -> None:
 
 
 def test_run_morning_brief_inserts_quiz_results_row_with_sent_at():
-    """Agent 3a must insert one quiz_results row with sent_at populated."""
+    """Agent 3a must insert one quiz_results row with sent_at populated.
+
+    send_email is mocked: Resend rejects unverified sender domains in dev.
+    Email delivery correctness is covered by unit tests.
+    """
+    from unittest.mock import patch
     from src.agents.daily_checkin.morning_brief import run_morning_brief
     from src.db.client import get_supabase
 
     supabase = get_supabase()
     _cleanup_quiz_results(supabase)  # start clean
 
-    result = run_morning_brief(FIXTURE_USER)
+    with patch("src.agents.daily_checkin.morning_brief.send_email"):
+        result = run_morning_brief(FIXTURE_USER)
 
     assert result is not None, "run_morning_brief() returned None on first run"
     assert "key_concepts" in result
@@ -106,20 +112,25 @@ def test_run_morning_brief_inserts_quiz_results_row_with_sent_at():
 
 
 def test_idempotency_double_run():
-    """Calling run_morning_brief() twice in the same day must produce only 1 DB row."""
+    """Calling run_morning_brief() twice in the same day must produce only 1 DB row.
+
+    send_email is mocked: Resend rejects unverified sender domains in dev.
+    """
+    from unittest.mock import patch
     from src.agents.daily_checkin.morning_brief import run_morning_brief
     from src.db.client import get_supabase
 
     supabase = get_supabase()
     _cleanup_quiz_results(supabase)  # start clean
 
-    # First call — must succeed
-    result1 = run_morning_brief(FIXTURE_USER)
-    assert result1 is not None, "First run must return a MorningBrief dict"
+    with patch("src.agents.daily_checkin.morning_brief.send_email"):
+        # First call — must succeed
+        result1 = run_morning_brief(FIXTURE_USER)
+        assert result1 is not None, "First run must return a MorningBrief dict"
 
-    # Second call — must skip (idempotency)
-    result2 = run_morning_brief(FIXTURE_USER)
-    assert result2 is None, "Second run same day must return None"
+        # Second call — must skip (idempotency)
+        result2 = run_morning_brief(FIXTURE_USER)
+        assert result2 is None, "Second run same day must return None"
 
     # Exactly 1 row in DB
     rows = (
