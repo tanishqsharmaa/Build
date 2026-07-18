@@ -32,6 +32,9 @@ dev = [
 testpaths = ["tests", "evals"]
 asyncio_mode = "auto"
 
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
