@@ -21,60 +21,88 @@ router = APIRouter()
 
 @router.get("/{quiz_id}", response_model=QuizResponse)
 async def get_quiz(quiz_id: str) -> QuizResponse:
-    """Fetch pre-generated MCQs for the given quiz_id (no LLM call)."""
+    """Fetch pre-generated MCQs for the given quiz_id (no LLM call).
+
+    Uses two separate Supabase queries instead of a join because quiz_results
+    and learning_plans have no direct FK — both FK to profiles.id separately.
+    """
     supabase = get_supabase()
-    row = (
+
+    # Step 1: fetch the quiz row
+    quiz_row = (
         supabase.table("quiz_results")
-        .select(
-            "quiz_id, questions, "
-            "learning_plans!inner(milestones, current_milestone_index)"
-        )
+        .select("quiz_id, questions, user_id")
         .eq("quiz_id", quiz_id)
         .maybe_single()
         .execute()
     )
-
-    if not row.data:
+    if not quiz_row.data:
         raise HTTPException(status_code=404, detail=f"Quiz {quiz_id!r} not found")
 
-    items = row.data.get("questions", {}).get("items", [])
+    items = quiz_row.data.get("questions", {}).get("items", [])
     if not items:
         raise HTTPException(
             status_code=404,
             detail="Quiz questions not generated yet — check back after the 4 PM cron",
         )
 
-    milestones = row.data["learning_plans"]["milestones"]
-    idx = row.data["learning_plans"]["current_milestone_index"]
-    topic = milestones[idx]["topic"] if idx < len(milestones) else "General"
+    # Step 2: fetch current milestone for the topic label
+    user_id = quiz_row.data["user_id"]
+    plan_row = (
+        supabase.table("learning_plans")
+        .select("milestones, current_milestone_index")
+        .eq("user_id", user_id)
+        .eq("is_active", True)
+        .maybe_single()
+        .execute()
+    )
+    topic = "General"
+    if plan_row.data:
+        milestones = plan_row.data["milestones"]
+        idx = plan_row.data["current_milestone_index"]
+        topic = milestones[idx]["topic"] if idx < len(milestones) else "General"
 
     return QuizResponse(quiz_id=quiz_id, topic=topic, questions=items)
 
 
 @router.post("/submit", response_model=SubmitResponse)
 async def submit_quiz(body: SubmitRequest) -> SubmitResponse:
-    """Score student answers and trigger the adaptive quiz_graph."""
+    """Score student answers and trigger the adaptive quiz_graph.
+
+    Uses two separate Supabase queries instead of a join — same reason as above.
+    """
     supabase = get_supabase()
 
-    # Fetch questions + current milestone context
-    row = (
+    # Step 1: fetch quiz questions
+    quiz_row = (
         supabase.table("quiz_results")
-        .select(
-            "questions, "
-            "learning_plans!inner(milestones, current_milestone_index)"
-        )
+        .select("questions, user_id")
         .eq("quiz_id", body.quiz_id)
         .maybe_single()
         .execute()
     )
-
-    if not row.data:
+    if not quiz_row.data:
         raise HTTPException(status_code=404, detail="Quiz not found")
 
-    items = row.data.get("questions", {}).get("items", [])
-    milestones = row.data["learning_plans"]["milestones"]
-    idx = row.data["learning_plans"]["current_milestone_index"]
-    topic = milestones[idx]["topic"] if idx < len(milestones) else "General"
+    items = quiz_row.data.get("questions", {}).get("items", [])
+    user_id = quiz_row.data["user_id"]
+
+    # Step 2: fetch current milestone context
+    plan_row = (
+        supabase.table("learning_plans")
+        .select("milestones, current_milestone_index")
+        .eq("user_id", user_id)
+        .eq("is_active", True)
+        .maybe_single()
+        .execute()
+    )
+    milestones: list[dict] = []
+    idx = 0
+    topic = "General"
+    if plan_row.data:
+        milestones = plan_row.data["milestones"]
+        idx = plan_row.data["current_milestone_index"]
+        topic = milestones[idx]["topic"] if idx < len(milestones) else "General"
 
     state = {
         "user_id": body.user_id,
