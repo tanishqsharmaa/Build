@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Morning Brief: {{ brief.topic }}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#0f172a;font-family:'Segoe UI',Arial,Helvetica,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#0f172a;padding:24px 0;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0"
+               style="background-color:#1e293b;border-radius:12px;overflow:hidden;max-width:600px;width:100%;">
+
+          <!-- ── Header ── -->
+          <tr>
+            <td style="background:linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%);padding:28px 32px;text-align:center;">
+              <p style="color:#c7d2fe;font-size:13px;letter-spacing:2px;text-transform:uppercase;margin:0 0 8px;">
+                SkillBridge · Daily Study Brief
+              </p>
+              <h1 style="color:#ffffff;font-size:24px;font-weight:700;margin:0 0 6px;">
+                ☀️ Morning Brief
+              </h1>
+              <p style="color:#e0e7ff;font-size:18px;font-weight:500;margin:0;">
+                {{ brief.topic }}
+              </p>
+            </td>
+          </tr>
+
+          <!-- ── Key Concepts ── -->
+          <tr>
+            <td style="padding:28px 32px 16px;">
+              <p style="color:#818cf8;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin:0 0 14px;">
+                📚 5 KEY CONCEPTS
+              </p>
+              {% for concept in brief.key_concepts %}
+              <div style="background-color:#0f172a;border-left:3px solid #6366f1;border-radius:0 8px 8px 0;padding:11px 16px;margin-bottom:8px;">
+                <p style="color:#e2e8f0;font-size:14px;line-height:1.5;margin:0;">
+                  <span style="color:#818cf8;font-weight:700;">{{ loop.index }}.</span> {{ concept }}
+                </p>
+              </div>
+              {% endfor %}
+            </td>
+          </tr>
+
+          <!-- ── Misconceptions ── -->
+          <tr>
+            <td style="padding:8px 32px 16px;">
+              <p style="color:#f59e0b;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin:0 0 14px;">
+                ⚠️ WATCH OUT FOR
+              </p>
+              {% for m in brief.misconceptions %}
+              <div style="background-color:#1c1917;border-left:3px solid #f59e0b;border-radius:0 8px 8px 0;padding:11px 16px;margin-bottom:8px;">
+                <p style="color:#fde68a;font-size:14px;line-height:1.5;margin:0;">{{ m }}</p>
+              </div>
+              {% endfor %}
+            </td>
+          </tr>
+
+          <!-- ── Mnemonic ── -->
+          <tr>
+            <td style="padding:8px 32px 16px;">
+              <p style="color:#34d399;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin:0 0 14px;">
+                🧠 REMEMBER THIS
+              </p>
+              <div style="background-color:#022c22;border:1px solid #34d399;border-radius:10px;padding:20px 24px;text-align:center;">
+                <p style="color:#6ee7b7;font-size:17px;font-style:italic;font-weight:500;line-height:1.6;margin:0;">
+                  "{{ brief.mnemonic }}"
+                </p>
+              </div>
+            </td>
+          </tr>
+
+          <!-- ── Think About ── -->
+          <tr>
+            <td style="padding:8px 32px 24px;">
+              <p style="color:#38bdf8;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin:0 0 14px;">
+                💭 THINK ABOUT THIS
+              </p>
+              {% for q in brief.think_about %}
+              <p style="color:#bae6fd;font-size:14px;line-height:1.6;margin:0 0 10px;">
+                <span style="color:#38bdf8;font-weight:700;">{{ loop.index }}.</span> {{ q }}
+              </p>
+              {% endfor %}
+            </td>
+          </tr>
+
+          <!-- ── Footer ── -->
+          <tr>
+            <td style="border-top:1px solid #334155;padding:18px 32px;text-align:center;">
+              <p style="color:#475569;font-size:12px;margin:0;">
+                Sent by <strong style="color:#6366f1;">SkillBridge</strong> &nbsp;·&nbsp;
+                SDG 4 — Quality Education &nbsp;·&nbsp; IBM SkillsBuild 2026
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
