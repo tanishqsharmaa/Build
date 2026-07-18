@@ -1,0 +1,71 @@
+"""modal_app.py — SkillBridge Modal deployment entrypoint.
+
+This is the single file Modal reads for the entire deployment.
+
+Local development (ephemeral URL, live-reload on save):
+    modal serve modal_app.py
+
+Production deployment (persistent URL):
+    modal deploy modal_app.py
+
+Registered functions (visible in `modal app list`):
+    fastapi-app           — ASGI web endpoint
+    morning-brief-cron    — 7:30 AM IST daily  (02:00 UTC)
+    quiz-conductor-cron   — 4:00 PM IST daily  (10:30 UTC)
+    weekly-report-cron    — Sunday 7:00 PM IST (13:30 UTC) — Sprint 8 stub
+
+Prerequisites (one-time, in Modal dashboard):
+    Create secret named "skillbridge-secrets" with all keys from .env.example
+"""
+import modal
+
+# ── Container image ─────────────────────────────────────────────────────────
+# Installs all deps from pyproject.toml into the Modal Linux container.
+# Modal automatically mounts the local src/ package alongside this file.
+image = (
+    modal.Image.debian_slim(python_version="3.11")
+    .pip_install_from_pyproject("pyproject.toml")
+)
+
+# ── Secrets (from Modal dashboard → https://modal.com/secrets) ───────────────
+# All keys in .env must exist in the "skillbridge-secrets" Modal secret.
+secrets = [modal.Secret.from_name("skillbridge-secrets")]
+
+# ── Modal App ────────────────────────────────────────────────────────────────
+app = modal.App(name="skillbridge", image=image, secrets=secrets)
+
+
+# ── ASGI web endpoint ─────────────────────────────────────────────────────────
+@app.function()
+@modal.asgi_app()
+def fastapi_app():
+    """Mount the SkillBridge FastAPI app. URL printed by `modal serve`."""
+    from src.api.main import app as api  # lazy import — runs inside container
+    return api
+
+
+# ── Cron 1: Morning Brief ─────────────────────────────────────────────────────
+# 7:30 AM IST = 02:00 UTC  →  cron "0 2 * * *"
+@app.function(schedule=modal.Cron("0 2 * * *"))
+async def morning_brief_cron():
+    """Send morning cheat-sheet email to all active users at 7:30 AM IST."""
+    from src.agents.daily_checkin.morning_brief import run_for_all_users
+    await run_for_all_users()
+
+
+# ── Cron 2: Quiz Conductor ───────────────────────────────────────────────────
+# 4:00 PM IST = 10:30 UTC  →  cron "30 10 * * *"
+@app.function(schedule=modal.Cron("30 10 * * *"))
+async def quiz_conductor_cron():
+    """Generate MCQs and email quiz links to all active users at 4:00 PM IST."""
+    from src.agents.daily_checkin.quiz_conductor import send_links_for_all_users
+    await send_links_for_all_users()
+
+
+# ── Cron 3: Weekly Report ────────────────────────────────────────────────────
+# Sunday 7:00 PM IST = 13:30 UTC  →  cron "30 13 * * 0"
+# Agent 4 implemented in Sprint 8 — stub logs and exits cleanly.
+@app.function(schedule=modal.Cron("30 13 * * 0"))
+async def weekly_report_cron():
+    """Sprint 8 stub — no-op until Agent 4 is implemented."""
+    print("[weekly_report_cron] Sprint 8 stub — skipping")
