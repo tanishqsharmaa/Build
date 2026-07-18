@@ -9,57 +9,70 @@ POST /quiz/submit
     The graph scores answers, applies the conditional edge:
       score >= 70 → advance_node (increment milestone index)
       score < 70  → replan_node (surgical splice + revision_count++)
+
+Note on Supabase queries:
+    Uses .limit(1).execute() + list check instead of .maybe_single() because
+    maybe_single() returns None (not a response object) when no row is found
+    in this version of supabase-py, causing AttributeError on .data access.
+    Two-step queries (quiz_results then learning_plans) avoid the PGRST200
+    join error — the two tables share no direct FK (both FK to profiles.id).
 """
 from fastapi import APIRouter, HTTPException
 
-from src.api.schemas import QuizResponse, SubmitRequest, SubmitResponse
 from src.agents.daily_checkin.quiz_graph import quiz_graph
+from src.api.schemas import QuizResponse, SubmitRequest, SubmitResponse
 from src.db.client import get_supabase
 
 router = APIRouter()
 
 
-@router.get("/{quiz_id}", response_model=QuizResponse)
-async def get_quiz(quiz_id: str) -> QuizResponse:
-    """Fetch pre-generated MCQs for the given quiz_id (no LLM call).
-
-    Uses two separate Supabase queries instead of a join because quiz_results
-    and learning_plans have no direct FK — both FK to profiles.id separately.
-    """
+def _fetch_quiz_row(quiz_id: str) -> dict | None:
+    """Return the quiz_results row for quiz_id, or None if not found."""
     supabase = get_supabase()
-
-    # Step 1: fetch the quiz row
-    quiz_row = (
+    rows = (
         supabase.table("quiz_results")
         .select("quiz_id, questions, user_id")
         .eq("quiz_id", quiz_id)
-        .maybe_single()
+        .limit(1)
         .execute()
     )
-    if not quiz_row.data:
+    return rows.data[0] if rows.data else None
+
+
+def _fetch_plan_row(user_id: str) -> dict | None:
+    """Return the active learning_plans row for user_id, or None if not found."""
+    supabase = get_supabase()
+    rows = (
+        supabase.table("learning_plans")
+        .select("milestones, current_milestone_index")
+        .eq("user_id", user_id)
+        .eq("is_active", True)
+        .limit(1)
+        .execute()
+    )
+    return rows.data[0] if rows.data else None
+
+
+@router.get("/{quiz_id}", response_model=QuizResponse)
+async def get_quiz(quiz_id: str) -> QuizResponse:
+    """Fetch pre-generated MCQs for the given quiz_id (no LLM call)."""
+    quiz_data = _fetch_quiz_row(quiz_id)
+    if quiz_data is None:
         raise HTTPException(status_code=404, detail=f"Quiz {quiz_id!r} not found")
 
-    items = quiz_row.data.get("questions", {}).get("items", [])
+    items = (quiz_data.get("questions") or {}).get("items", [])
     if not items:
         raise HTTPException(
             status_code=404,
             detail="Quiz questions not generated yet — check back after the 4 PM cron",
         )
 
-    # Step 2: fetch current milestone for the topic label
-    user_id = quiz_row.data["user_id"]
-    plan_row = (
-        supabase.table("learning_plans")
-        .select("milestones, current_milestone_index")
-        .eq("user_id", user_id)
-        .eq("is_active", True)
-        .maybe_single()
-        .execute()
-    )
+    # Best-effort topic lookup — doesn't 404 if plan is missing
     topic = "General"
-    if plan_row.data:
-        milestones = plan_row.data["milestones"]
-        idx = plan_row.data["current_milestone_index"]
+    plan_data = _fetch_plan_row(quiz_data["user_id"])
+    if plan_data:
+        milestones = plan_data["milestones"]
+        idx = plan_data["current_milestone_index"]
         topic = milestones[idx]["topic"] if idx < len(milestones) else "General"
 
     return QuizResponse(quiz_id=quiz_id, topic=topic, questions=items)
@@ -67,41 +80,21 @@ async def get_quiz(quiz_id: str) -> QuizResponse:
 
 @router.post("/submit", response_model=SubmitResponse)
 async def submit_quiz(body: SubmitRequest) -> SubmitResponse:
-    """Score student answers and trigger the adaptive quiz_graph.
-
-    Uses two separate Supabase queries instead of a join — same reason as above.
-    """
-    supabase = get_supabase()
-
-    # Step 1: fetch quiz questions
-    quiz_row = (
-        supabase.table("quiz_results")
-        .select("questions, user_id")
-        .eq("quiz_id", body.quiz_id)
-        .maybe_single()
-        .execute()
-    )
-    if not quiz_row.data:
+    """Score student answers and trigger the adaptive quiz_graph."""
+    quiz_data = _fetch_quiz_row(body.quiz_id)
+    if quiz_data is None:
         raise HTTPException(status_code=404, detail="Quiz not found")
 
-    items = quiz_row.data.get("questions", {}).get("items", [])
-    user_id = quiz_row.data["user_id"]
+    items = (quiz_data.get("questions") or {}).get("items", [])
+    user_id = quiz_data["user_id"]
 
-    # Step 2: fetch current milestone context
-    plan_row = (
-        supabase.table("learning_plans")
-        .select("milestones, current_milestone_index")
-        .eq("user_id", user_id)
-        .eq("is_active", True)
-        .maybe_single()
-        .execute()
-    )
     milestones: list[dict] = []
     idx = 0
     topic = "General"
-    if plan_row.data:
-        milestones = plan_row.data["milestones"]
-        idx = plan_row.data["current_milestone_index"]
+    plan_data = _fetch_plan_row(user_id)
+    if plan_data:
+        milestones = plan_data["milestones"]
+        idx = plan_data["current_milestone_index"]
         topic = milestones[idx]["topic"] if idx < len(milestones) else "General"
 
     state = {
