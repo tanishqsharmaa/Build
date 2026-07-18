@@ -22,7 +22,7 @@ Create exactly `target_weeks` milestones, one per week. For each milestone:
   should be a concrete, actionable learning task (e.g. "Build a REST endpoint with FastAPI").
 - Set `free_resources` to 1–3 URLs from youtube.com, github.com, or coursera.org only.
   These must be plausible URLs for the topic. Never use paid platforms.
-- Set `milestone_id` to a lowercase, hyphenated slug: `{topic}-week-{week}`
+- Set `milestone_id` to a lowercase, hyphenated slug: `{{topic}}-week-{{week}}`
   (e.g. `python-basics-week-1`).
 - Set `total_weeks` at the top level to the total count of milestones.
 
