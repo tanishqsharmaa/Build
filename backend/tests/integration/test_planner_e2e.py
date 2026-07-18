@@ -28,6 +28,29 @@ FIXTURE_STATE = {
 }
 
 
+@pytest.fixture(autouse=True)
+def manage_test_user():
+    """Upsert a profiles row before each test; clean up learning_plans + profile after.
+
+    learning_plans.user_id is a FK → profiles.id, so without this the INSERT
+    fails with a foreign key violation.
+    """
+    from src.db.client import get_supabase
+    sb = get_supabase()
+    sb.table("profiles").upsert({
+        "id": TEST_USER_ID,
+        "email": "planner-integration-test@skillbridge.test",
+        "goal": "Backend dev",
+    }).execute()
+
+    yield  # test runs here
+
+    # Always clean up — even if the test fails
+    sb.table("learning_plans").delete().eq("user_id", TEST_USER_ID).execute()
+    sb.table("skill_gaps").delete().eq("user_id", TEST_USER_ID).execute()
+    sb.table("profiles").delete().eq("id", TEST_USER_ID).execute()
+
+
 def _cleanup(supabase):
     """Delete all learning_plans rows created by integration tests."""
     supabase.table("learning_plans").delete().eq("user_id", TEST_USER_ID).execute()
