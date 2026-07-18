@@ -6,6 +6,12 @@ These tests run fully offline.
 import pytest
 from unittest.mock import MagicMock, patch
 
+# Python 3.13 changed pkgutil.resolve_name: patch() requires the submodule to
+# already be an attribute of its parent package before the patch context opens.
+# Importing the module here registers it on src.agents.daily_checkin so that
+# patch("src.agents.daily_checkin.morning_brief.X") resolves correctly.
+import src.agents.daily_checkin.morning_brief  # noqa: F401
+
 from src.agents.daily_checkin.schemas import MorningBrief
 
 
