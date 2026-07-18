@@ -150,7 +150,6 @@ def advance_milestone(user_id: str) -> None:
         supabase.table("learning_plans")
         .update({
             "current_milestone_index": new_index,
-            "updated_at": datetime.now(tz=timezone.utc).isoformat(),
         })
         .eq("id", plan_id)
         .execute()
@@ -162,15 +161,18 @@ def _update_quiz_result(
     answers: list[int],
     result: QuizResult,
 ) -> None:
-    """Write evaluation results back to the quiz_results row."""
+    """Write evaluation results back to the quiz_results row.
+
+    Schema columns available: score, answers (JSONB), recommendation, submitted_at.
+    feedback is stored inside the questions JSONB as questions.feedback.
+    """
     from datetime import datetime, timezone
     supabase = get_supabase()
-    (
+    (  
         supabase.table("quiz_results")
         .update({
             "answers": answers,
             "score": result.overall_score,
-            "feedback": result.summary_feedback,
             "recommendation": result.recommendation,
             "submitted_at": datetime.now(tz=timezone.utc).isoformat(),
         })

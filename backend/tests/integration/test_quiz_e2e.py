@@ -57,6 +57,28 @@ def supabase():
     return get_supabase()
 
 
+@pytest.fixture(autouse=True)
+def manage_test_user(supabase):
+    """Upsert test profile before each test; clean up all test data after.
+
+    Same pattern as Sprint 3 test_planner_e2e.py — required because
+    learning_plans.user_id has a FK → profiles.id.
+    """
+    supabase.table("profiles").upsert({
+        "id": TEST_USER_ID,
+        "email": TEST_EMAIL,
+        "name": "Test User Sprint5",
+    }).execute()
+
+    yield  # run the test
+
+    # Teardown: delete in FK dependency order
+    supabase.table("quiz_results").delete().eq("user_id", TEST_USER_ID).execute()
+    supabase.table("learning_plans").delete().eq("user_id", TEST_USER_ID).execute()
+    supabase.table("skill_gaps").delete().eq("user_id", TEST_USER_ID).execute()
+    supabase.table("profiles").delete().eq("id", TEST_USER_ID).execute()
+
+
 @pytest.fixture()
 def learning_plan_fixture(supabase):
     """Ensure the test user has an active learning plan with 3 milestones.
@@ -85,7 +107,7 @@ def learning_plan_fixture(supabase):
             "user_id": TEST_USER_ID,
             "milestones": milestones,
             "current_milestone_index": 0,
-            "revision_count": 0,
+            "plan_revision_count": 0,
             "is_active": True,
         })
         .execute()
@@ -113,8 +135,6 @@ def quiz_row_fixture(supabase, learning_plan_fixture):
     supabase.table("quiz_results").insert({
         "user_id": TEST_USER_ID,
         "quiz_id": quiz_id,
-        "topic": "Test Topic 1",
-        "milestone_index": 0,
         "questions": {"topic": "Test Topic 1", "milestone_index": 0, "items": []},
         "sent_at": datetime.now(tz=timezone.utc).isoformat(),
     }).execute()
@@ -195,15 +215,17 @@ def test_full_quiz_replan_path(supabase, learning_plan_fixture, quiz_row_fixture
         total_weeks=2,
     )
 
+    mock_chain = MagicMock()
+    mock_chain.invoke.return_value = updated_ms
     with patch(
-        "src.agents.daily_checkin.replanner.get_llm"
+        "src.agents.daily_checkin.replanner.get_llm",
+        return_value=mock_chain,
     ), patch(
         "src.agents.daily_checkin.replanner.ChatPromptTemplate"
     ) as mock_pt, patch(
         "src.agents.daily_checkin.replanner.PydanticOutputParser"
     ) as mock_parser:
-        mock_chain = MagicMock()
-        mock_chain.invoke.return_value = updated_ms
+        mock_chain.__or__ = MagicMock(return_value=mock_chain)
         mock_parser.return_value.get_format_instructions.return_value = ""
         mock_pt.from_messages.return_value.__or__ = MagicMock(
             return_value=mock_chain
@@ -213,14 +235,14 @@ def test_full_quiz_replan_path(supabase, learning_plan_fixture, quiz_row_fixture
     # Verify DB
     row = (
         supabase.table("learning_plans")
-        .select("revision_count, milestones")
+        .select("plan_revision_count, milestones")
         .eq("user_id", TEST_USER_ID)
         .eq("is_active", True)
         .maybe_single()
         .execute()
     )
-    assert row.data["revision_count"] == 1, (
-        f"Expected revision_count=1, got {row.data['revision_count']}"
+    assert row.data["plan_revision_count"] == 1, (
+        f"Expected plan_revision_count=1, got {row.data['plan_revision_count']}"
     )
     assert row.data["milestones"][0]["topic"] == "Test Topic 1", (
         "Revised milestone topic must still be 'Test Topic 1'"
@@ -256,12 +278,12 @@ def test_max_rewrites_enforced(supabase, learning_plan_fixture, quiz_row_fixture
     # DB revision_count must still be 0 (no update was written)
     row = (
         supabase.table("learning_plans")
-        .select("revision_count")
+        .select("plan_revision_count")
         .eq("user_id", TEST_USER_ID)
         .eq("is_active", True)
         .maybe_single()
         .execute()
     )
-    assert row.data["revision_count"] == 0, (
-        f"DB revision_count must remain 0 when cap is hit, got {row.data['revision_count']}"
+    assert row.data["plan_revision_count"] == 0, (
+        f"DB plan_revision_count must remain 0 when cap is hit, got {row.data['plan_revision_count']}"
     )

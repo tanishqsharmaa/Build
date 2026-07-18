@@ -101,8 +101,7 @@ def replanner_node(state: SkillBridgeState) -> SkillBridgeState:
         supabase.table("learning_plans")
         .update({
             "milestones": new_plan,
-            "revision_count": new_revision_count,
-            "updated_at": datetime.now(tz=timezone.utc).isoformat(),
+            "plan_revision_count": new_revision_count,
         })
         .eq("user_id", user_id)
         .eq("is_active", True)
