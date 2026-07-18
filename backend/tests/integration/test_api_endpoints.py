@@ -32,7 +32,7 @@ def test_profile():
     supabase.table("profiles").upsert({
         "id": TEST_USER_ID,
         "email": TEST_EMAIL,
-        "full_name": "API Test User",
+        "name": "API Test User",
         "goal": "Get a backend developer job",
         "hours_per_week": 10,
     }).execute()
