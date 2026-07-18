@@ -18,7 +18,11 @@ from src.db.client import get_supabase
 client = TestClient(app)
 
 TEST_USER_ID = "00000000-0000-0000-0000-000000000001"
-TEST_EMAIL = "delivered@resend.dev"
+TEST_EMAIL   = "delivered@resend.dev"
+
+# Separate user for the chain test — avoids one_active_plan_per_user conflict
+TEST_USER_ID_CHAIN = "00000000-0000-0000-0000-000000000002"
+TEST_EMAIL_CHAIN   = "chain@resend.dev"
 
 
 @pytest.fixture(scope="module")
@@ -39,6 +43,23 @@ def test_profile():
     yield
     # Teardown — cascades to skill_gaps and learning_plans via ON DELETE CASCADE
     supabase.table("profiles").delete().eq("id", TEST_USER_ID).execute()
+
+
+@pytest.fixture(scope="module")
+def test_profile_chain():
+    """Separate profile row for the chain test — different user_id to avoid
+    one_active_plan_per_user unique index conflict with test_plan_endpoint_returns_200.
+    """
+    supabase = get_supabase()
+    supabase.table("profiles").upsert({
+        "id": TEST_USER_ID_CHAIN,
+        "email": TEST_EMAIL_CHAIN,
+        "name": "Chain Test User",
+        "goal": "Get a data analyst job",
+        "hours_per_week": 5,
+    }).execute()
+    yield
+    supabase.table("profiles").delete().eq("id", TEST_USER_ID_CHAIN).execute()
 
 
 # ── /health ───────────────────────────────────────────────────────────────────
@@ -131,11 +152,16 @@ def test_plan_endpoint_returns_200(test_profile, skill_gap_fixture):
 
 # ── /analyze → /plan chain (requires .env secrets) ───────────────────────────
 
-def test_analyze_then_plan_chain(test_profile):
-    """End-to-end: /analyze output feeds directly into /plan input."""
+def test_analyze_then_plan_chain(test_profile_chain):
+    """End-to-end: /analyze output feeds directly into /plan input.
+
+    Uses TEST_USER_ID_CHAIN (distinct from TEST_USER_ID) so the /plan call
+    does not conflict with the active learning_plans row created by
+    test_plan_endpoint_returns_200 (one_active_plan_per_user unique index).
+    """
     analyze_r = client.post("/analyze/", json={
-        "user_id": TEST_USER_ID,
-        "user_email": TEST_EMAIL,
+        "user_id": TEST_USER_ID_CHAIN,
+        "user_email": TEST_EMAIL_CHAIN,
         "user_goal": "Get a data analyst job",
         "current_skills": ["Excel"],
         "hours_per_week": 5,
@@ -144,8 +170,8 @@ def test_analyze_then_plan_chain(test_profile):
     skill_gap_report = analyze_r.json()["skill_gap_report"]
 
     plan_r = client.post("/plan/", json={
-        "user_id": TEST_USER_ID,
-        "user_email": TEST_EMAIL,
+        "user_id": TEST_USER_ID_CHAIN,
+        "user_email": TEST_EMAIL_CHAIN,
         "user_goal": "Get a data analyst job",
         "current_skills": ["Excel"],
         "hours_per_week": 5,
