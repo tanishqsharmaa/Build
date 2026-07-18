@@ -13,11 +13,32 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.api.main import app
+from src.db.client import get_supabase
 
 client = TestClient(app)
 
 TEST_USER_ID = "00000000-0000-0000-0000-000000000001"
 TEST_EMAIL = "delivered@resend.dev"
+
+
+@pytest.fixture(scope="module")
+def test_profile():
+    """Insert a profiles row for TEST_USER_ID before LLM tests; delete after.
+
+    skill_gaps and learning_plans both FK to profiles.id, so this row must
+    exist before any agent writes to those tables.
+    """
+    supabase = get_supabase()
+    supabase.table("profiles").upsert({
+        "id": TEST_USER_ID,
+        "email": TEST_EMAIL,
+        "full_name": "API Test User",
+        "goal": "Get a backend developer job",
+        "hours_per_week": 10,
+    }).execute()
+    yield
+    # Teardown — cascades to skill_gaps and learning_plans via ON DELETE CASCADE
+    supabase.table("profiles").delete().eq("id", TEST_USER_ID).execute()
 
 
 # ── /health ───────────────────────────────────────────────────────────────────
@@ -75,7 +96,7 @@ def test_report_stub_returns_200():
 
 # ── /analyze — real LLM call (requires .env secrets) ─────────────────────────
 
-def test_analyze_endpoint_returns_200():
+def test_analyze_endpoint_returns_200(test_profile):
     r = client.post("/analyze/", json={
         "user_id": TEST_USER_ID,
         "user_email": TEST_EMAIL,
@@ -92,7 +113,7 @@ def test_analyze_endpoint_returns_200():
 
 # ── /plan — real LLM call (requires .env secrets + skill_gap_fixture) ─────────
 
-def test_plan_endpoint_returns_200(skill_gap_fixture):
+def test_plan_endpoint_returns_200(test_profile, skill_gap_fixture):
     r = client.post("/plan/", json={
         "user_id": TEST_USER_ID,
         "user_email": TEST_EMAIL,
@@ -110,7 +131,7 @@ def test_plan_endpoint_returns_200(skill_gap_fixture):
 
 # ── /analyze → /plan chain (requires .env secrets) ───────────────────────────
 
-def test_analyze_then_plan_chain():
+def test_analyze_then_plan_chain(test_profile):
     """End-to-end: /analyze output feeds directly into /plan input."""
     analyze_r = client.post("/analyze/", json={
         "user_id": TEST_USER_ID,
