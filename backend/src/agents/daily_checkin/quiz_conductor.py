@@ -8,6 +8,7 @@ Public surface:
   send_links_for_all_users()                  -> None  (async, cron entry point)
 """
 import asyncio
+import logging
 from pathlib import Path
 
 from langchain_core.output_parsers import PydanticOutputParser
