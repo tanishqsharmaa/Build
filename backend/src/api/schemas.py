@@ -64,4 +64,4 @@ class SubmitResponse(BaseModel):
 # ── /report ───────────────────────────────────────────────────────────────────
 
 class ReportResponse(BaseModel):
-    message: str                    # Sprint 8 stub placeholder
+    reports: list[dict]             # list of weekly_reports rows as dicts

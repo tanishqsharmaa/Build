@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Weekly Report — {{ report.week_start }}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#0f172a;font-family:'Segoe UI',Arial,Helvetica,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#0f172a;padding:24px 0;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0"
+               style="background-color:#1e293b;border-radius:12px;overflow:hidden;max-width:600px;width:100%;">
+
+          <!-- ── Header ── -->
+          <tr>
+            <td style="background:linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%);padding:28px 32px;text-align:center;">
+              <p style="color:#c7d2fe;font-size:13px;letter-spacing:2px;text-transform:uppercase;margin:0 0 8px;">
+                SkillBridge &middot; Weekly Digest
+              </p>
+              <h1 style="color:#ffffff;font-size:24px;font-weight:700;margin:0 0 6px;">
+                Your Weekly Report
+              </h1>
+              <p style="color:#e0e7ff;font-size:16px;font-weight:500;margin:0;">
+                Week of {{ report.week_start }}
+              </p>
+            </td>
+          </tr>
+
+          <!-- ── Stats Cards ── -->
+          <tr>
+            <td style="padding:28px 32px 12px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td width="50%" style="padding-right:8px;vertical-align:top;">
+                    <div style="background-color:#0f172a;border-radius:10px;padding:18px 16px;text-align:center;">
+                      <p style="color:#818cf8;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin:0 0 8px;">
+                        Milestones Done
+                      </p>
+                      <p style="color:#e2e8f0;font-size:32px;font-weight:700;margin:0;">
+                        {{ report.milestones_completed }}
+                      </p>
+                    </div>
+                  </td>
+                  <td width="50%" style="padding-left:8px;vertical-align:top;">
+                    <div style="background-color:#0f172a;border-radius:10px;padding:18px 16px;text-align:center;">
+                      <p style="color:#34d399;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin:0 0 8px;">
+                        Avg Quiz Score
+                      </p>
+                      <p style="color:#e2e8f0;font-size:32px;font-weight:700;margin:0;">
+                        {{ "%.0f"|format(report.avg_quiz_score) }}%
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- ── Verdict Banner ── -->
+          <tr>
+            <td style="padding:8px 32px 20px;">
+              {% set verdict = "Strong week — keep this momentum going." if report.avg_quiz_score >= 70 else "Solid effort — every quiz teaches you something." %}
+              <div style="background-color:#1c1917;border:1px solid #f59e0b;border-radius:10px;padding:14px 20px;text-align:center;">
+                <p style="color:#fde68a;font-size:14px;font-weight:500;margin:0;">{{ verdict }}</p>
+              </div>
+            </td>
+          </tr>
+
+          <!-- ── Report Content (LLM-generated HTML) ── -->
+          <tr>
+            <td style="padding:8px 32px 24px;color:#e2e8f0;font-size:14px;line-height:1.6;">
+              {{ report.report_html | safe }}
+            </td>
+          </tr>
+
+          <!-- ── LinkedIn Post ── -->
+          <tr>
+            <td style="padding:8px 32px 16px;">
+              <p style="color:#38bdf8;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin:0 0 14px;">
+                Share Your Progress
+              </p>
+              <div style="background-color:#0f172a;border:1px solid #334155;border-radius:10px;padding:18px 20px;">
+                <p style="color:#cbd5e1;font-size:13px;line-height:1.6;margin:0 0 14px;white-space:pre-wrap;">{{ report.linkedin_post_text }}</p>
+                <p style="color:#475569;font-size:11px;margin:0;">
+                  Copy this post and share it on LinkedIn to document your learning journey.
+                </p>
+              </div>
+            </td>
+          </tr>
+
+          <!-- ── Footer ── -->
+          <tr>
+            <td style="border-top:1px solid #334155;padding:18px 32px;text-align:center;">
+              <p style="color:#475569;font-size:12px;margin:0;">
+                Sent by <strong style="color:#6366f1;">SkillBridge</strong> &middot;
+                SDG 4 &mdash; Quality Education &middot; IBM SkillsBuild 2026
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

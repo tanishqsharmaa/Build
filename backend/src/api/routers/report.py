@@ -1,17 +1,31 @@
-"""GET /report/{user_id} — weekly progress report stub.
+"""GET /report/{user_id} — weekly progress reports.
 
-Agent 4 (Progress Report) is implemented in Sprint 8.
-This stub keeps the router skeleton in place so the test suite
-and frontend API contract don't break.
+Returns the last 4 weeks of progress reports from the weekly_reports table.
 """
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from src.api.schemas import ReportResponse
+from src.db.client import get_supabase
 
 router = APIRouter()
 
 
 @router.get("/{user_id}", response_model=ReportResponse)
-async def get_report(user_id: str) -> ReportResponse:  # noqa: ARG001
-    """Stub — returns 200 with a placeholder message until Sprint 8."""
-    return ReportResponse(message="Not implemented — Sprint 8")
+async def get_report(user_id: str) -> ReportResponse:
+    supabase = get_supabase()
+    try:
+        rows = (
+            supabase.table("weekly_reports")
+            .select("*")
+            .eq("user_id", user_id)
+            .order("week_start", desc=True)
+            .limit(4)
+            .execute()
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Database query failed: {exc}",
+        ) from exc
+
+    return ReportResponse(reports=rows.data if rows.data else [])

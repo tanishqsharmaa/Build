@@ -67,8 +67,8 @@ async def quiz_conductor_cron():
 
 # ── Cron 3: Weekly Report ────────────────────────────────────────────────────
 # Sunday 7:00 PM IST = 13:30 UTC  →  cron "30 13 * * 0"
-# Agent 4 implemented in Sprint 8 — stub logs and exits cleanly.
 @app.function(schedule=modal.Cron("30 13 * * 0"))
 async def weekly_report_cron():
-    """Sprint 8 stub — no-op until Agent 4 is implemented."""
-    print("[weekly_report_cron] Sprint 8 stub — skipping")
+    """Generate + email weekly progress reports every Sunday 7:00 PM IST."""
+    from src.agents.progress_report.report_runner import run_for_all_users
+    await run_for_all_users()
