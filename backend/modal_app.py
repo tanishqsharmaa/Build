@@ -20,11 +20,13 @@ Prerequisites (one-time, in Modal dashboard):
 import modal
 
 # ── Container image ─────────────────────────────────────────────────────────
-# Installs all deps from pyproject.toml into the Modal Linux container.
-# Modal automatically mounts the local src/ package alongside this file.
+# Installs all deps from pyproject.toml, then bakes src/ and prompts/ into
+# the image layer so `from src.xxx import yyy` works inside the container.
+# copy_local_dir runs at image build time — changes to src/ trigger a rebuild.
 image = (
     modal.Image.debian_slim(python_version="3.11")
     .pip_install_from_pyproject("pyproject.toml")
+    .copy_local_dir("src", "/root/src")
 )
 
 # ── Secrets (from Modal dashboard → https://modal.com/secrets) ───────────────
