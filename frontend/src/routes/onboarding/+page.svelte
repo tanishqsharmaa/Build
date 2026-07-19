@@ -28,7 +28,7 @@
     skills = skills.filter(sk => sk !== s);
   }
 
-  const canSubmit = () => goal.trim().length > 0 && skills.length > 0 && !loading;
+  const canSubmit = () => goal.trim().length > 0 && (skills.length > 0 || skillInput.trim().length > 0) && !loading;
 </script>
 
 <div class="page">
@@ -68,7 +68,7 @@
       class="form-card card"
     >
       <!-- Hidden: comma-joined skills list -->
-      <input type="hidden" name="skills" value={skills.join(',')} />
+<input type="hidden" name="skills" value={skillInput.trim() ? [...skills, skillInput.trim()].join(',') : skills.join(',')} />
 
       <!-- Goal -->
       <div class="field">
