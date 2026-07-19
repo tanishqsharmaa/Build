@@ -205,9 +205,14 @@ async def send_links_for_all_users() -> None:
             try:
                 run_quiz_conductor(user)
             except Exception as exc:  # noqa: BLE001 — log and continue batch
-                print(f"[quiz_conductor] ERROR user={user['id']}: {exc}")
+                logger.error("quiz_conductor failed for user=%s: %s", user["id"], exc, exc_info=True)
 
-    await asyncio.gather(
+    results = await asyncio.gather(
         *[_run_one(r) for r in rows.data],
         return_exceptions=True,
     )
+    failed = sum(1 for r in results if isinstance(r, Exception))
+    if failed:
+        logger.warning("quiz_conductor batch: %d/%d failed", failed, len(rows.data))
+    else:
+        logger.info("quiz_conductor batch: %d users processed", len(rows.data))
