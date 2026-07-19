@@ -5,7 +5,7 @@ from langchain_core.prompts import ChatPromptTemplate
 
 from src.agents.skill_gap.schemas import SkillGapReport
 from src.agents.state import SkillBridgeState
-from src.core.llm_client import get_llm
+from src.core.llm_client import get_llm, invoke_llm_with_retry
 from src.db.client import get_supabase
 from src.retrieval.embeddings import embed_query
 from src.retrieval.vector_store import search_job_skills
@@ -51,7 +51,7 @@ def analyze_gaps(state: SkillBridgeState) -> SkillBridgeState:
 
     chain = prompt | llm | parser
 
-    report: SkillGapReport = invoke_llm_with_retry(chain, {
+    report: SkillGapReport = chain.invoke({
         "goal": goal,
         "skills": ", ".join(skills),
         "rag_context": rag_context,
@@ -97,4 +97,3 @@ def safety_net(state: SkillBridgeState) -> SkillBridgeState:
     )
 
     return {**state, "skill_gap_report": report_dict, "progress_log": log}
-: log}

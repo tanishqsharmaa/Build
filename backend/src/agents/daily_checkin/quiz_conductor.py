@@ -211,9 +211,3 @@ async def send_links_for_all_users() -> None:
         *[_run_one(r) for r in rows.data],
         return_exceptions=True,
     )
-
-    failed = sum(1 for r in results if isinstance(r, Exception))
-    if failed:
-        logger.warning("quiz_conductor batch: %d/%d failed", failed, len(rows.data))
-    else:
-        logger.info("quiz_conductor batch: %d users processed", len(rows.data))

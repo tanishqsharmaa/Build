@@ -48,7 +48,7 @@
                         Avg Quiz Score
                       </p>
                       <p style="color:#e2e8f0;font-size:32px;font-weight:700;margin:0;">
-                        {{ report.avg_quiz_score | round | int }}%
+                        {{ "%.0f"|format(report.avg_quiz_score) }}%
                       </p>
                     </div>
                   </td>

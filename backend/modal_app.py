@@ -19,8 +19,6 @@ Prerequisites (one-time, in Modal dashboard):
 """
 import modal
 
-import src.core.observability  # noqa: F401 — sets LANGCHAIN_TRACING_V2 + API key at import
-
 # ── Container image ─────────────────────────────────────────────────────────
 # pip_install_from_pyproject installs all locked deps.
 # add_local_python_source("src") makes the local src/ package importable

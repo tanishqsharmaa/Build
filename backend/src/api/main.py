@@ -11,8 +11,6 @@ Endpoints:
 This module is imported by modal_app.py via:
     from src.api.main import app as api
 """
-import src.core.observability  # noqa: F401 — sets LANGCHAIN_TRACING_V2 + API key at import
-
 from fastapi import FastAPI
 
 from src.api.routers import analyze, plan, quiz, report

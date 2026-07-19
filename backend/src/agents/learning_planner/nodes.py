@@ -5,7 +5,7 @@ from langchain_core.prompts import ChatPromptTemplate
 
 from src.agents.learning_planner.schemas import MilestoneList
 from src.agents.state import SkillBridgeState
-from src.core.llm_client import get_llm
+from src.core.llm_client import get_llm, invoke_llm_with_retry
 from src.db.client import get_supabase
 
 _PROMPT_PATH = (
@@ -48,7 +48,7 @@ def plan_milestones(state: SkillBridgeState) -> SkillBridgeState:
 
     chain = prompt | llm | parser
 
-    milestone_list: MilestoneList = invoke_llm_with_retry(chain, {
+    milestone_list: MilestoneList = chain.invoke({
         "total_weeks": report["recommended_timeline_weeks"],
         "hours": hours,
         "skills_summary": skills_summary,

@@ -18,6 +18,7 @@ from src.email.client import send_email
 from src.email.renderer import render_weekly_report
 
 _SEMAPHORE = asyncio.Semaphore(10)
+logger = logging.getLogger(__name__)
 
 
 def _this_monday() -> str:

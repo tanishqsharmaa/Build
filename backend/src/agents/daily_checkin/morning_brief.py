@@ -13,7 +13,7 @@ from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 
 from src.agents.daily_checkin.schemas import MorningBrief
-from src.core.llm_client import get_llm
+from src.core.llm_client import get_llm, invoke_llm_with_retry
 from src.db.client import get_supabase
 from src.email.client import send_email
 from src.email.renderer import render_morning_brief
@@ -161,14 +161,9 @@ async def run_for_all_users() -> None:
             try:
                 run_morning_brief(user)
             except Exception as exc:  # noqa: BLE001 — log and continue batch
-                logger.error("morning_brief failed for user=%s: %s", user["id"], exc, exc_info=True)
+                print(f"[morning_brief] ERROR user={user['id']}: {exc}")
 
-    results = await asyncio.gather(
+    await asyncio.gather(
         *[_run_one(r) for r in rows.data],
         return_exceptions=True,
     )
-    failed = sum(1 for r in results if isinstance(r, Exception))
-    if failed:
-        logger.warning("morning_brief batch: %d/%d failed", failed, len(rows.data))
-    else:
-        logger.info("morning_brief batch: %d users processed", len(rows.data))

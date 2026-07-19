@@ -169,7 +169,7 @@ def generate_linkedin_post(
     ])
 
     chain = prompt | llm
-    response = invoke_llm_with_retry(chain, {
+    response = chain.invoke({
         "topics": topics_text,
         "milestones_completed": milestones_completed,
         "avg_quiz_score": avg_quiz_score,

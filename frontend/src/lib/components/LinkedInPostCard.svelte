@@ -47,8 +47,6 @@
 
 <style>
   .linkedin-card {
-    --color-linkedin:       #0077b5;
-    --color-linkedin-light: #4fa8d5;
     background:    var(--color-surface);
     border:        1px solid var(--color-border);
     border-radius: var(--radius);
@@ -59,7 +57,7 @@
     transition:    border-color 0.2s;
   }
   .linkedin-card:hover {
-    border-color: color-mix(in srgb, var(--color-linkedin) 40%, transparent);
+    border-color: rgba(0, 119, 181, 0.4);
   }
 
   .li-header {
@@ -71,7 +69,7 @@
   .li-logo {
     width:           30px;
     height:          30px;
-    background:      var(--color-linkedin);
+    background:      #0077b5;
     border-radius:   6px;
     display:         flex;
     align-items:     center;
@@ -93,10 +91,10 @@
     font-size:     0.7rem;
     font-weight:   600;
     padding:       0.15rem 0.5rem;
-    background:    color-mix(in srgb, var(--color-linkedin) 12%, transparent);
-    color:         var(--color-linkedin-light);
+    background:    rgba(0, 119, 181, 0.12);
+    color:         #4fa8d5;
     border-radius: 100px;
-    border:        1px solid color-mix(in srgb, var(--color-linkedin) 20%, transparent);
+    border:        1px solid rgba(0, 119, 181, 0.2);
   }
 
   .li-text {
@@ -114,9 +112,9 @@
     justify-content: center;
     gap:             0.4rem;
     padding:         0.6rem 1.25rem;
-    background:      color-mix(in srgb, var(--color-linkedin) 10%, transparent);
-    color:           var(--color-linkedin-light);
-    border:          1px solid color-mix(in srgb, var(--color-linkedin) 25%, transparent);
+    background:      rgba(0, 119, 181, 0.1);
+    color:           #4fa8d5;
+    border:          1px solid rgba(0, 119, 181, 0.25);
     border-radius:   var(--radius-sm);
     font-size:       0.88rem;
     font-weight:     600;
@@ -126,7 +124,7 @@
     transition:      background 0.2s, transform 0.15s;
   }
   .li-copy-btn:hover {
-    background: color-mix(in srgb, var(--color-linkedin) 20%, transparent);
+    background: rgba(0, 119, 181, 0.2);
     transform:  translateY(-1px);
   }
   .li-copy-btn:active {

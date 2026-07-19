@@ -68,5 +68,4 @@ class TestRetryBackoff:
         with patch("tenacity.nap.time.sleep") as mock_sleep:
             result = invoke_llm_with_retry(mock_chain, {"input": "test"})
             assert result == {"result": "ok"}
-            # Two failures → two sleep calls
             assert mock_sleep.call_count == 2
