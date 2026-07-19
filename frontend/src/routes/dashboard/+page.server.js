@@ -1,5 +1,5 @@
 export const load = async ({ locals }) => {
-	const userId = locals.session?.user?.id;
+	const userId = locals.user?.id;
 
 	if (!userId) {
 		return { plan: null, scores: [], userId: null };

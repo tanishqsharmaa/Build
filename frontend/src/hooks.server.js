@@ -1,5 +1,5 @@
 import { createServerClient } from '@supabase/ssr';
-import { redirect, error } from '@sveltejs/kit';
+import { redirect } from '@sveltejs/kit';
 
 const PUBLIC_PATHS = ['/', '/login'];
 
@@ -19,35 +19,27 @@ export const handle = async ({ event, resolve }) => {
 		}
 	);
 
-	const { data: { session } } = await event.locals.supabase.auth.getSession();
+	event.locals.safeGetSession = async () => {
+		const { data: { session } } = await event.locals.supabase.auth.getSession();
+		if (!session) return { session: null, user: null };
 
-	if (!session && !PUBLIC_PATHS.includes(event.url.pathname)) {
-		const loginUrl = new URL('/login', event.url.origin);
-		throw redirect(303, loginUrl);
-	}
+		const { data: { user }, error: userError } = await event.locals.supabase.auth.getUser();
+		if (userError) {
+			// Invalid/expired token — clear and return null
+			return { session: null, user: null };
+		}
+
+		return { session, user };
+	};
+
+	const { session, user } = await event.locals.safeGetSession();
 
 	event.locals.session = session;
+	event.locals.user = user;
 
-	if (session?.user?.id) {
-		try {
-			const { data: profile } = await event.locals.supabase
-				.from('profiles')
-				.select('id, email, goal, hours_per_week')
-				.eq('id', session.user.id)
-				.maybeSingle();
-
-			event.locals.profile = profile;
-		} catch {
-			event.locals.profile = null;
-		}
+	if (!session && !PUBLIC_PATHS.includes(event.url.pathname)) {
+		throw redirect(303, '/login');
 	}
 
 	return resolve(event);
-};
-
-export const handleError = async ({ error: err, event }) => {
-	console.error(`[hooks.server.js] ${event.url.pathname}:`, err);
-	return {
-		message: err?.message ?? 'Internal error'
-	};
 };

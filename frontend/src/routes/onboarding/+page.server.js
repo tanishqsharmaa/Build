@@ -12,8 +12,8 @@ export const actions = {
 		if (!goal) throw error(400, 'Goal is required.');
 		if (!skills.length) throw error(400, 'At least one skill is required.');
 
-		const userId = locals.session?.user?.id;
-		const userEmail = locals.session?.user?.email;
+		const userId = locals.user?.id;
+		const userEmail = locals.user?.email;
 
 		if (!userId || !userEmail) {
 			throw redirect(303, '/login');
