@@ -203,4 +203,3 @@ def test_report_endpoint_returns_data():
     assert "reports" in data
     assert len(data["reports"]) >= 1
     assert data["reports"][0]["week_start"] == "2026-07-13"
-26-07-13"
