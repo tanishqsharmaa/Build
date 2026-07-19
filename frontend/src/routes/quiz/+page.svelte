@@ -10,9 +10,10 @@
   import { page }      from '$app/stores';
   import { goto }      from '$app/navigation';
   import QuizOption    from '$lib/components/QuizOption.svelte';
-  import { supabase }  from '$lib/supabaseClient';
 
   const API_URL    = import.meta.env.VITE_API_URL;
+  const TEST_UID   = import.meta.env.VITE_TEST_USER_ID;
+  const TEST_EMAIL = import.meta.env.VITE_TEST_USER_EMAIL;
 
   let quizId    = '';
   let topic     = '';
@@ -65,18 +66,14 @@
 
     const answerList = questions.map((_, i) => answers[i] ?? -1);
 
-    const { data: { session } } = await supabase.auth.getSession();
-    const uid = session?.user?.id ?? '';
-    const uemail = session?.user?.email ?? '';
-
     try {
       const res = await fetch(`${API_URL}/quiz/submit`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
           quiz_id:    quizId,
-          user_id:    uid,
-          user_email: uemail,
+          user_id:    TEST_UID,
+          user_email: TEST_EMAIL,
           answers:    answerList,
         }),
       });

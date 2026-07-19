@@ -8,10 +8,7 @@
 		loading = true;
 		err = '';
 		const { error: authErr } = await supabase.auth.signInWithOAuth({
-			provider: 'google',
-			options: {
-				redirectTo: `${window.location.origin}/auth/callback`
-			}
+			provider: 'google'
 		});
 		if (authErr) err = authErr.message;
 		loading = false;
