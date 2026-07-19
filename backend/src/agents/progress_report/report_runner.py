@@ -5,6 +5,7 @@ Public surface:
   run_for_all_users()      -> None  (async, cron entry point)
 """
 import asyncio
+import logging
 from datetime import date, datetime, timedelta, timezone
 
 from src.agents.progress_report.nodes import (
