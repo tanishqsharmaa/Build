@@ -22,6 +22,7 @@ _PROMPT_PATH = Path(__file__).parent.parent.parent / "prompts" / "quiz_generator
 
 # Protects DeepSeek from a 50-user burst during the 4:00 PM cron
 _SEMAPHORE = asyncio.Semaphore(10)
+logger = logging.getLogger(__name__)
 
 
 def _load_prompt() -> str:
@@ -210,3 +211,9 @@ async def send_links_for_all_users() -> None:
         *[_run_one(r) for r in rows.data],
         return_exceptions=True,
     )
+
+    failed = sum(1 for r in results if isinstance(r, Exception))
+    if failed:
+        logger.warning("quiz_conductor batch: %d/%d failed", failed, len(rows.data))
+    else:
+        logger.info("quiz_conductor batch: %d users processed", len(rows.data))

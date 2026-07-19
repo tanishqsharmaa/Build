@@ -121,11 +121,16 @@ async def run_for_all_users() -> None:
             try:
                 result = run_weekly_report(user)
                 status = "generated" if result else "skipped (idempotent)"
-                print(f"[weekly_report] user={user['id']}: {status}")
+                logger.info("weekly_report user=%s: %s", user["id"], status)
             except Exception as exc:  # noqa: BLE001
-                print(f"[weekly_report] ERROR user={user['id']}: {exc}")
+                logger.error("weekly_report failed for user=%s: %s", user["id"], exc, exc_info=True)
 
-    await asyncio.gather(
+    results = await asyncio.gather(
         *[_run_one(r) for r in rows.data],
         return_exceptions=True,
     )
+    failed = sum(1 for r in results if isinstance(r, Exception))
+    if failed:
+        logger.warning("weekly_report batch: %d/%d failed", failed, len(rows.data))
+    else:
+        logger.info("weekly_report batch: %d users processed", len(rows.data))
