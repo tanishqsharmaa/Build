@@ -51,7 +51,7 @@ def analyze_gaps(state: SkillBridgeState) -> SkillBridgeState:
 
     chain = prompt | llm | parser
 
-    report: SkillGapReport = chain.invoke({
+    report: SkillGapReport = invoke_llm_with_retry(chain, {
         "goal": goal,
         "skills": ", ".join(skills),
         "rag_context": rag_context,
@@ -97,3 +97,4 @@ def safety_net(state: SkillBridgeState) -> SkillBridgeState:
     )
 
     return {**state, "skill_gap_report": report_dict, "progress_log": log}
+: log}

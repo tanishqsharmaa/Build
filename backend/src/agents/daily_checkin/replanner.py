@@ -78,7 +78,7 @@ def replanner_node(state: SkillBridgeState) -> SkillBridgeState:
     ])
 
     chain = prompt | llm | parser
-    updated: MilestoneList = chain.invoke({
+    updated: MilestoneList = invoke_llm_with_retry(chain, {
         "topic": topic,
         "score": latest_score,
         "revision_count": revision_count + 1,

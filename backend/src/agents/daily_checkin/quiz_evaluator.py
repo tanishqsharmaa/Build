@@ -102,7 +102,7 @@ def generate_feedback(
     ])
 
     chain = prompt | llm | parser
-    feedback: FeedbackOutput = chain.invoke({
+    feedback: FeedbackOutput = invoke_llm_with_retry(chain, {
         "topic": topic,
         "score": score,
         "qa_context": str(qa_context),
@@ -243,3 +243,4 @@ def evaluate_and_route(
         advance_milestone(user_id=user_id)
 
     return result
+result

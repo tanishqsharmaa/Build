@@ -50,7 +50,7 @@ def generate_quiz(topic: str, milestone_description: str) -> list[QuizQuestion]:
     ])
 
     chain = prompt | llm | parser
-    result: QuizList = chain.invoke({
+    result: QuizList = invoke_llm_with_retry(chain, {
         "topic": topic,
         "milestone_description": milestone_description,
         "format_instructions": parser.get_format_instructions(),

@@ -9,7 +9,7 @@ from pathlib import Path
 
 from langchain_core.prompts import ChatPromptTemplate
 
-from src.core.llm_client import get_llm
+from src.core.llm_client import get_llm, invoke_llm_with_retry
 from src.db.client import get_supabase
 
 _PROMPT_DIR = Path(__file__).parent.parent.parent / "prompts"
@@ -169,7 +169,7 @@ def generate_linkedin_post(
     ])
 
     chain = prompt | llm
-    response = chain.invoke({
+    response = invoke_llm_with_retry(chain, {
         "topics": topics_text,
         "milestones_completed": milestones_completed,
         "avg_quiz_score": avg_quiz_score,

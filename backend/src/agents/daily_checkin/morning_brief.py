@@ -51,7 +51,7 @@ def generate_brief(topic: str, milestone_description: str) -> MorningBrief:
     ])
 
     chain = prompt | llm | parser
-    return chain.invoke({
+    return invoke_llm_with_retry(chain, {
         "topic": topic,
         "milestone_description": milestone_description,
         "format_instructions": parser.get_format_instructions(),
