@@ -95,18 +95,17 @@ def _mock_supabase_dispatch(quiz_scores=None, quiz_topics=None, milestones=None,
         tm = MagicMock()
 
         if table_name == "quiz_results":
+            # Chain: .select("score, topic") → .eq("user_id", ...) → .gte("submitted_at", ...) → .not_ → .is_("score","null") → .execute()
             sel = MagicMock()
-            e1 = MagicMock()
-            e2 = MagicMock()
-            e3 = MagicMock()
-            n1 = MagicMock()
-            n2 = MagicMock()
-            n2.execute.return_value = quiz_response
-            n1.is_.return_value = n2
-            e3.not_ = n1
-            e2.gte.return_value = e3
-            e1.eq.return_value = e2
-            sel.eq.return_value = e1
+            eq_user = MagicMock()
+            gte_date = MagicMock()
+            not_builder = MagicMock()
+            is_null = MagicMock()
+            is_null.execute.return_value = quiz_response
+            not_builder.is_.return_value = is_null
+            gte_date.not_ = not_builder
+            eq_user.gte.return_value = gte_date
+            sel.eq.return_value = eq_user
             tm.select.return_value = sel
 
         elif table_name == "learning_plans":
