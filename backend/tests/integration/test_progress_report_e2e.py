@@ -78,7 +78,8 @@ def test_report_stored_in_db():
     supabase = get_supabase()
     _cleanup_weekly_reports(supabase)
 
-    # Mock DeepSeek calls
+    # Mock DeepSeek calls — need to patch both get_llm and ChatPromptTemplate
+    # because `prompt | llm` calls prompt.__or__(), not the mock's __or__
     mock_html_response = MagicMock()
     mock_html_response.content = "<html><body><h1>Weekly Report</h1><p>Great week!</p></body></html>"
 
@@ -87,16 +88,25 @@ def test_report_stored_in_db():
 
     mock_chain_html = MagicMock()
     mock_chain_html.invoke.return_value = mock_html_response
-    mock_chain_html.__or__ = MagicMock(return_value=mock_chain_html)
 
     mock_chain_post = MagicMock()
     mock_chain_post.invoke.return_value = mock_post_response
-    mock_chain_post.__or__ = MagicMock(return_value=mock_chain_post)
 
     def get_llm_side_effect(temperature=None):
-        if temperature == 0.7:
-            return mock_chain_html
-        return mock_chain_post
+        return mock_chain_html if temperature == 0.7 else mock_chain_post
+
+    prompt_mock_html = MagicMock()
+    prompt_mock_html.__or__ = MagicMock(return_value=mock_chain_html)
+    prompt_mock_post = MagicMock()
+    prompt_mock_post.__or__ = MagicMock(return_value=mock_chain_post)
+
+    def prompt_side_effect(*args, **kwargs):
+        # Called twice: once for report (temp=0.7), once for linkedin (temp=0.8)
+        # We alternate: first call → html, second → post
+        if not hasattr(prompt_side_effect, "call_count"):
+            prompt_side_effect.call_count = 0
+        prompt_side_effect.call_count += 1
+        return prompt_mock_html if prompt_side_effect.call_count == 1 else prompt_mock_post
 
     user = {"id": TEST_USER_ID, "email": TEST_EMAIL}
 
@@ -105,7 +115,11 @@ def test_report_stored_in_db():
             "src.agents.progress_report.nodes.get_llm",
             side_effect=get_llm_side_effect,
         ):
-            result = run_weekly_report(user)
+            with patch(
+                "src.agents.progress_report.nodes.ChatPromptTemplate.from_messages",
+                side_effect=prompt_side_effect,
+            ):
+                result = run_weekly_report(user)
 
     assert result is not None, "run_weekly_report returned None"
     assert "week_start" in result
@@ -142,22 +156,36 @@ def test_unique_week_constraint():
     mock_html_response.content = "<html><body><h1>Report</h1></body></html>"
     mock_post_response = MagicMock()
     mock_post_response.content = "I learned FastAPI. #python"
-    mock_chain = MagicMock()
-    mock_chain.invoke.return_value = mock_html_response
-    mock_chain.__or__ = MagicMock(return_value=mock_chain)
+
+    mock_chain_html = MagicMock()
+    mock_chain_html.invoke.return_value = mock_html_response
+    mock_chain_post = MagicMock()
+    mock_chain_post.invoke.return_value = mock_post_response
 
     def get_llm_side(temperature=None):
-        mock_chain.invoke.return_value = (
-            mock_html_response if temperature == 0.7 else mock_post_response
-        )
-        return mock_chain
+        return mock_chain_html if temperature == 0.7 else mock_chain_post
+
+    prompt_mock_html = MagicMock()
+    prompt_mock_html.__or__ = MagicMock(return_value=mock_chain_html)
+    prompt_mock_post = MagicMock()
+    prompt_mock_post.__or__ = MagicMock(return_value=mock_chain_post)
+
+    def prompt_side(*args, **kwargs):
+        if not hasattr(prompt_side, "count"):
+            prompt_side.count = 0
+        prompt_side.count += 1
+        return prompt_mock_html if prompt_side.count <= 2 else prompt_mock_post
 
     with patch("src.agents.progress_report.report_runner.send_email"):
         with patch(
             "src.agents.progress_report.nodes.get_llm",
             side_effect=get_llm_side,
         ):
-            result1 = run_weekly_report(user)
+            with patch(
+                "src.agents.progress_report.nodes.ChatPromptTemplate.from_messages",
+                side_effect=prompt_side,
+            ):
+                result1 = run_weekly_report(user)
             assert result1 is not None, "First run must succeed"
 
             result2 = run_weekly_report(user)
