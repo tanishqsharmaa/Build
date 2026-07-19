@@ -243,4 +243,3 @@ def evaluate_and_route(
         advance_milestone(user_id=user_id)
 
     return result
-result

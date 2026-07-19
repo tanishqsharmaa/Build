@@ -3,7 +3,6 @@ from pathlib import Path
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from src.agents.daily_checkin.schemas import MorningBrief
-from src.agents.progress_report.schemas import WeeklyReport
 
 _TEMPLATE_DIR = Path(__file__).parent / "templates"
 _env = Environment(
@@ -24,8 +23,12 @@ def render_morning_brief(brief: MorningBrief) -> str:
     return template.render(brief=brief)
 
 
-def render_weekly_report(report: WeeklyReport) -> str:
-    """Render a WeeklyReport to an HTML string using the Jinja2 template."""
+def render_weekly_report(report) -> str:
+    """Render a WeeklyReport to an HTML string using the Jinja2 template.
+
+    Accepts any object with week_start, milestones_completed, avg_quiz_score,
+    linkedin_post_text, and report_html attributes.
+    """
     try:
         template = _env.get_template("weekly_report.html")
     except Exception:
