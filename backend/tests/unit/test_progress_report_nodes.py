@@ -15,60 +15,51 @@ from src.agents.progress_report.schemas import WeeklyReport
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _make_mock_chain(return_value):
-    """Return a MagicMock whose .invoke() returns return_value and .__or__ returns itself."""
-    mock = MagicMock()
-    mock.invoke.return_value = return_value
-    mock.__or__ = MagicMock(return_value=mock)
-    return mock
+def _make_llm_response(text: str) -> MagicMock:
+    """Return a MagicMock whose .content is text (simulates an AIMessage)."""
+    resp = MagicMock()
+    resp.content = text
+    return resp
 
 
-def _mock_supabase_quiz_data(scores=None, topics=None):
-    """Supabase mock returning quiz_results rows with given scores/topics."""
-    if scores is None:
-        scores = [75.0, 80.0, 65.0]
-    if topics is None:
-        topics = ["FastAPI Basics", "Pydantic Models", "Dependency Injection"]
+def _mock_chain_with_result(text: str) -> MagicMock:
+    """Return a MagicMock that acts as a LangChain chain — .invoke() returns the response.
 
-    mock_sb = MagicMock()
-
-    # quiz_results query chain
-    quiz_data = [
-        {"score": s, "topic": t} for s, t in zip(scores, topics)
-    ]
-    quiz_response = MagicMock()
-    quiz_response.data = quiz_data
-    mock_sb.table.return_value.select.return_value.eq.return_value \
-        .gte.return_value.not_.return_value.is_.return_value.execute.return_value = quiz_response
-
-    return mock_sb
+    Must handle `prompt | mock_chain` (calls prompt.__or__) by mocking
+    ChatPromptTemplate separately. Use alongside patch("...ChatPromptTemplate.from_messages").
+    """
+    resp = _make_llm_response(text)
+    chain = MagicMock()
+    chain.invoke.return_value = resp
+    return chain
 
 
-def _mock_supabase_plan_data(milestones=None, current_index=3):
-    """Supabase mock returning learning_plans row."""
-    if milestones is None:
-        milestones = [
-            {"topic": "FastAPI Basics", "week": 1},
-            {"topic": "Pydantic Models", "week": 2},
-            {"topic": "Dependency Injection", "week": 3},
-            {"topic": "Databases", "week": 4},
-            {"topic": "Auth", "week": 5},
-        ]
+def _setup_llm_patch(text: str):
+    """Return a patch-stack that mocks both get_llm and ChatPromptTemplate.
 
-    mock_sb = MagicMock()
+    Usage:
+        patches = _setup_llm_patch("response text")
+        with patches[0], patches[1]:
+            result = generate_report(...)
+    """
+    chain = _mock_chain_with_result(text)
 
-    plan_data = [{"milestones": milestones, "current_milestone_index": current_index}]
-    plan_response = MagicMock()
-    plan_response.data = plan_data
+    # Mock ChatPromptTemplate.from_messages so prompt | llm works:
+    #   prompt_mock.__or__ returns our chain
+    prompt_mock = MagicMock()
+    prompt_mock.__or__ = MagicMock(return_value=chain)
 
-    mock_sb.table.return_value.select.return_value.eq.return_value.eq.return_value \
-        .limit.return_value.execute.return_value = plan_response
-
-    return mock_sb
+    return (
+        patch("src.agents.progress_report.nodes.ChatPromptTemplate.from_messages", return_value=prompt_mock),
+        patch("src.agents.progress_report.nodes.get_llm", return_value=chain),
+    )
 
 
-def _mock_supabase_full(quiz_scores=None, quiz_topics=None, milestones=None, current_index=3):
-    """Combined Supabase mock handling both quiz_results and learning_plans queries."""
+def _mock_supabase_dispatch(quiz_scores=None, quiz_topics=None, milestones=None, current_index=3):
+    """Return a MagicMock that handles table() dispatch for quiz_results + learning_plans.
+
+    Uses side_effect on .table() to return different mocks depending on table name.
+    """
     if quiz_scores is None:
         quiz_scores = [75.0, 80.0, 65.0]
     if quiz_topics is None:
@@ -82,54 +73,66 @@ def _mock_supabase_full(quiz_scores=None, quiz_topics=None, milestones=None, cur
             {"topic": "Auth", "week": 5},
         ]
 
-    mock_sb = MagicMock()
     quiz_data = [{"score": s, "topic": t} for s, t in zip(quiz_scores, quiz_topics)]
     plan_data = [{"milestones": milestones, "current_milestone_index": current_index}]
 
-    # Need to handle two different query chains, so we use side_effect on the first call
     quiz_response = MagicMock()
     quiz_response.data = quiz_data
     plan_response = MagicMock()
     plan_response.data = plan_data
 
-    # The query chain will be called multiple times — mock_sb.table() returns different things
-    # We'll use a side_effect function
-    def _table_side_effect(table_name):
-        table_mock = MagicMock()
-        if table_name == "quiz_results":
-            select_mock = MagicMock()
-            eq_mock = MagicMock()
-            gte_mock = MagicMock()
-            not_mock = MagicMock()
-            is_mock = MagicMock()
-            is_mock.execute.return_value = quiz_response
-            not_mock.is_.return_value = is_mock
-            gte_mock.not_.return_value = not_mock
-            eq_mock.gte.return_value = gte_mock
-            select_mock.eq.return_value = eq_mock
-            table_mock.select.return_value = select_mock
-        elif table_name == "learning_plans":
-            select_mock = MagicMock()
-            eq_mock1 = MagicMock()
-            eq_mock2 = MagicMock()
-            limit_mock = MagicMock()
-            limit_mock.execute.return_value = plan_response
-            eq_mock2.limit.return_value = limit_mock
-            eq_mock1.eq.return_value = eq_mock2
-            select_mock.eq.return_value = eq_mock1
-            table_mock.select.return_value = select_mock
-        elif table_name == "weekly_reports":
-            select_mock = MagicMock()
-            eq_mock1 = MagicMock()
-            eq_mock2 = MagicMock()
-            eq_mock2.execute.return_value = MagicMock(data=[])
-            eq_mock1.eq.return_value = eq_mock2
-            select_mock.eq.return_value = eq_mock1
-            table_mock.select.return_value = select_mock
-            # Also handle insert
-            table_mock.insert.return_value.execute.return_value = MagicMock(data=[])
-        return table_mock
+    def _build_full_chain(table_mock, steps):
+        """Build a .return_value chain: table_mock.attr1 = attr2, attr2.attr3 = attr4, etc.
 
+        steps is a list of (parent_mock, attr_name, child_mock) tuples.
+        The last child gets .execute.return_value set to the response.
+        """
+        for i, (parent, attr, child) in enumerate(steps):
+            setattr(parent, attr, child)
+        return child
+
+    def _table_side_effect(table_name):
+        tm = MagicMock()
+
+        if table_name == "quiz_results":
+            sel = MagicMock()
+            e1 = MagicMock()
+            e2 = MagicMock()
+            e3 = MagicMock()
+            n1 = MagicMock()
+            n2 = MagicMock()
+            n2.execute.return_value = quiz_response
+            n1.is_.return_value = n2
+            e3.not_.return_value = n1
+            e2.gte.return_value = e3
+            e1.eq.return_value = e2
+            sel.eq.return_value = e1
+            tm.select.return_value = sel
+
+        elif table_name == "learning_plans":
+            sel = MagicMock()
+            e1 = MagicMock()
+            e2 = MagicMock()
+            e3 = MagicMock()
+            e3.execute.return_value = plan_response
+            e2.limit.return_value = e3
+            e1.eq.return_value = e2
+            sel.eq.return_value = e1
+            tm.select.return_value = sel
+
+        elif table_name == "weekly_reports":
+            sel = MagicMock()
+            e1 = MagicMock()
+            e2 = MagicMock()
+            e2.execute.return_value = MagicMock(data=[])
+            e1.eq.return_value = e2
+            sel.eq.return_value = e1
+            tm.select.return_value = sel
+            tm.insert.return_value.execute.return_value = MagicMock(data=[])
+
+        return tm
+
+    mock_sb = MagicMock()
     mock_sb.table = MagicMock(side_effect=_table_side_effect)
     return mock_sb
 
@@ -142,27 +145,14 @@ class TestAggregateScores:
     def test_aggregate_scores_correct(self):
         from src.agents.progress_report.nodes import aggregate_scores
 
-        mock_sb = _mock_supabase_quiz_data(
-            scores=[75.0, 80.0, 65.0],
-            topics=["FastAPI", "Pydantic", "DI"],
+        mock_sb = _mock_supabase_dispatch(
+            quiz_scores=[75.0, 80.0, 65.0],
+            quiz_topics=["FastAPI", "Pydantic", "DI"],
+            current_index=3,
         )
-        # Need to handle learning_plans query too
-        mock_sb2 = _mock_supabase_plan_data(current_index=3)
-
-        call_count = [0]
-
-        def table_side_effect(table_name):
-            if table_name == "quiz_results":
-                return mock_sb.table(table_name)
-            elif table_name == "learning_plans":
-                return mock_sb2.table(table_name)
-            return MagicMock()
-
-        combined = MagicMock()
-        combined.table = MagicMock(side_effect=table_side_effect)
 
         with patch(
-            "src.agents.progress_report.nodes.get_supabase", return_value=combined
+            "src.agents.progress_report.nodes.get_supabase", return_value=mock_sb
         ):
             avg, completed, details = aggregate_scores("user-1", "2026-07-13")
 
@@ -175,21 +165,12 @@ class TestAggregateScores:
     def test_aggregate_scores_no_quizzes(self):
         from src.agents.progress_report.nodes import aggregate_scores
 
-        mock_sb = _mock_supabase_quiz_data(scores=[], topics=[])
-        mock_sb2 = _mock_supabase_plan_data(current_index=0)
-
-        combined = MagicMock()
-        def table_side_effect(table_name):
-            if table_name == "quiz_results":
-                return mock_sb.table(table_name)
-            elif table_name == "learning_plans":
-                return mock_sb2.table(table_name)
-            return MagicMock()
-
-        combined.table = MagicMock(side_effect=table_side_effect)
+        mock_sb = _mock_supabase_dispatch(
+            quiz_scores=[], quiz_topics=[], current_index=0
+        )
 
         with patch(
-            "src.agents.progress_report.nodes.get_supabase", return_value=combined
+            "src.agents.progress_report.nodes.get_supabase", return_value=mock_sb
         ):
             avg, completed, details = aggregate_scores("user-1", "2026-07-13")
 
@@ -207,11 +188,9 @@ class TestGenerateReport:
         from src.agents.progress_report.nodes import generate_report
 
         html_content = "<!DOCTYPE html><html><body><h1>Weekly Report</h1></body></html>"
-        mock_response = MagicMock()
-        mock_response.content = html_content
-        mock_chain = _make_mock_chain(mock_response)
+        p1, p2 = _setup_llm_patch(html_content)
 
-        with patch("src.agents.progress_report.nodes.get_llm", return_value=mock_chain):
+        with p1, p2:
             result = generate_report(
                 week_start="2026-07-13",
                 milestones_completed=3,
@@ -236,11 +215,9 @@ class TestGenerateLinkedinPost:
         from src.agents.progress_report.nodes import generate_linkedin_post
 
         post_text = "This week I completed FastAPI Basics and Pydantic models. #python #backend"
-        mock_response = MagicMock()
-        mock_response.content = post_text
-        mock_chain = _make_mock_chain(mock_response)
+        p1, p2 = _setup_llm_patch(post_text)
 
-        with patch("src.agents.progress_report.nodes.get_llm", return_value=mock_chain):
+        with p1, p2:
             result = generate_linkedin_post(
                 topics=["FastAPI Basics", "Pydantic Models"],
                 milestones_completed=3,
@@ -262,7 +239,7 @@ class TestWeeklyReportSchema:
             milestones_completed=3,
             avg_quiz_score=73.3,
             linkedin_post_text="I learned FastAPI this week. #python #backend #learning",
-            report_html="<html><body>Great progress this week!</body></html>",
+            report_html="<html><body><h1>Great progress!</h1><p>You completed 3 milestones this week with an average score of 73%.</p></body></html>",
         )
         assert report.milestones_completed == 3
         assert report.avg_quiz_score == 73.3
@@ -274,7 +251,7 @@ class TestWeeklyReportSchema:
                 milestones_completed=10,
                 avg_quiz_score=80.0,
                 linkedin_post_text="Great week learning backend development. #python",
-                report_html="<html><body>Report</body></html>",
+                report_html="<html><body><h1>Weekly Report</h1><p>Good progress this week.</p></body></html>",
             )
 
 

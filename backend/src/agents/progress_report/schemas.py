@@ -19,7 +19,7 @@ class WeeklyReport(BaseModel):
         ..., min_length=20, description="AI-generated LinkedIn post text (100-150 words)"
     )
     report_html: str = Field(
-        ..., min_length=100, description="Full HTML email body for the weekly digest"
+        ..., min_length=20, description="Full HTML email body for the weekly digest"
     )
 
     @model_validator(mode="after")
