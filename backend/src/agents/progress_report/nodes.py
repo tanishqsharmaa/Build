@@ -40,7 +40,7 @@ def aggregate_scores(user_id: str, week_start: str) -> tuple[float, int, dict]:
     # ── Quiz scores for the week ──
     quiz_rows = (
         supabase.table("quiz_results")
-        .select("score, topic")
+        .select("score, questions")
         .eq("user_id", user_id)
         .gte("submitted_at", f"{week_start}T00:00:00+00:00")
         .not_.is_("score", "null")
@@ -48,7 +48,14 @@ def aggregate_scores(user_id: str, week_start: str) -> tuple[float, int, dict]:
     )
     scores = [r["score"] for r in quiz_rows.data if r.get("score") is not None]
     avg_quiz_score = sum(scores) / len(scores) if scores else 0.0
-    topics_quizzed = list({r["topic"] for r in quiz_rows.data if r.get("topic")})
+
+    # topic is embedded inside questions JSONB as {"topic": "...", ...}
+    topics_quizzed = []
+    for r in quiz_rows.data:
+        q_data = r.get("questions")
+        if isinstance(q_data, dict) and q_data.get("topic"):
+            topics_quizzed.append(q_data["topic"])
+    topics_quizzed = list({t for t in topics_quizzed if t})
 
     # ── Active learning plan ──
     plan_rows = (

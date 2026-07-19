@@ -73,7 +73,7 @@ def _mock_supabase_dispatch(quiz_scores=None, quiz_topics=None, milestones=None,
             {"topic": "Auth", "week": 5},
         ]
 
-    quiz_data = [{"score": s, "topic": t} for s, t in zip(quiz_scores, quiz_topics)]
+    quiz_data = [{"score": s, "questions": {"topic": t}} for s, t in zip(quiz_scores, quiz_topics)]
     plan_data = [{"milestones": milestones, "current_milestone_index": current_index}]
 
     quiz_response = MagicMock()
