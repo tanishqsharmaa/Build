@@ -6,6 +6,7 @@ Public surface:
   run_for_all_users()                          -> None  (async, cron entry point)
 """
 import asyncio
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
 
