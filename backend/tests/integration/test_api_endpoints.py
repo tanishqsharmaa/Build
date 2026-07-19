@@ -112,7 +112,9 @@ def test_quiz_submit_404_on_invalid_id():
 def test_report_stub_returns_200():
     r = client.get(f"/report/{TEST_USER_ID}")
     assert r.status_code == 200
-    assert "Sprint 8" in r.json()["message"]
+    data = r.json()
+    assert "reports" in data
+    assert isinstance(data["reports"], list)
 
 
 # ── /analyze — real LLM call (requires .env secrets) ─────────────────────────
