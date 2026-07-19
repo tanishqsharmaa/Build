@@ -103,7 +103,7 @@ def _mock_supabase_dispatch(quiz_scores=None, quiz_topics=None, milestones=None,
             n2 = MagicMock()
             n2.execute.return_value = quiz_response
             n1.is_.return_value = n2
-            e3.not_.return_value = n1
+            e3.not_ = n1
             e2.gte.return_value = e3
             e1.eq.return_value = e2
             sel.eq.return_value = e1
