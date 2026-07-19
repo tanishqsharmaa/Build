@@ -24,6 +24,7 @@ _PROMPT_PATH = (
 
 # Protects DeepSeek from a 50-user burst during the 7:30 AM cron
 _SEMAPHORE = asyncio.Semaphore(10)
+logger = logging.getLogger(__name__)
 
 
 def _load_prompt() -> str:

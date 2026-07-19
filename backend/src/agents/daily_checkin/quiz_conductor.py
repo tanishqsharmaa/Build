@@ -14,7 +14,7 @@ from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 
 from src.agents.daily_checkin.schemas import QuizList, QuizQuestion
-from src.core.llm_client import get_llm
+from src.core.llm_client import get_llm, invoke_llm_with_retry
 from src.db.client import get_supabase
 from src.email.client import send_email
 
