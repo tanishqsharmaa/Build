@@ -6,13 +6,13 @@
 <script>
   import { enhance } from '$app/forms';
 
-  export let form; // populated by SvelteKit on action error
+  let { form } = $props(); // populated by SvelteKit on action error
 
-  let goal        = '';
-  let skillInput  = '';
-  let skills      = [];
-  let hours       = 15;
-  let loading     = false;
+  let goal        = $state('');
+  let skillInput  = $state('');
+  let skills      = $state([]);
+  let hours       = $state(15);
+  let loading     = $state(false);
 
   /** Add skill on Enter or comma */
   function handleSkillKey(e) {
@@ -28,7 +28,7 @@
     skills = skills.filter(sk => sk !== s);
   }
 
-  const canSubmit = () => goal.trim().length > 0 && (skills.length > 0 || skillInput.trim().length > 0) && !loading;
+  let canSubmit = $derived(goal.trim().length > 0 && (skills.length > 0 || skillInput.trim().length > 0) && !loading);
 </script>
 
 <div class="page">
@@ -101,7 +101,7 @@
               <button
                 type="button"
                 class="chip-remove"
-                on:click={() => removeSkill(s)}
+                onclick={() => removeSkill(s)}
                 aria-label="Remove {s}"
               >×</button>
             </span>
@@ -110,7 +110,7 @@
             id="skill_input"
             class="chip-input"
             bind:value={skillInput}
-            on:keydown={handleSkillKey}
+            onkeydown={handleSkillKey}
             placeholder={skills.length ? 'Add more...' : 'Type a skill, press Enter to add'}
             autocomplete="off"
           />
@@ -144,7 +144,7 @@
       <button
         type="submit"
         class="btn-primary btn-full"
-        disabled={!canSubmit()}
+        disabled={!canSubmit}
         id="onboarding-submit"
       >
         {#if loading}
