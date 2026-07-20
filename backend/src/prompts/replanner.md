@@ -63,7 +63,7 @@ and next milestones. Use this schema exactly:
 - `topic`: keep the same topic names (do NOT rename)
 - `milestone_id`: keep the same slugs (do NOT change)
 - `daily_subtopics`: exactly 5 items (Mon–Fri); Day 1 of the failed milestone MUST include "Prerequisites review"
-- `free_resources`: 2–4 items; only free URLs (youtube.com, github.com, coursera.org free tier, docs pages)
+- `free_resources`: 2–4 items; URLs MUST be from youtube.com, github.com, or coursera.org only
 - `total_weeks`: always 2
 
 ## Part 6 — Constraints

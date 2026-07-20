@@ -78,16 +78,22 @@ def replanner_node(state: SkillBridgeState) -> SkillBridgeState:
     ])
 
     chain = prompt | llm | parser
-    updated: MilestoneList = chain.invoke({
-        "topic": topic,
-        "score": latest_score,
-        "revision_count": revision_count + 1,
-        "failed_milestone": str(failed_milestone),
-        "failed_week": failed_milestone.get("week", idx + 1),
-        "next_milestone": str(next_milestone),
-        "next_week": next_milestone.get("week", idx + 2),
-        "format_instructions": parser.get_format_instructions(),
-    })
+    try:
+        updated: MilestoneList = invoke_llm_with_retry(chain, {
+            "topic": topic,
+            "score": latest_score,
+            "revision_count": revision_count + 1,
+            "failed_milestone": str(failed_milestone),
+            "failed_week": failed_milestone.get("week", idx + 1),
+            "next_milestone": str(next_milestone),
+            "next_week": next_milestone.get("week", idx + 2),
+            "format_instructions": parser.get_format_instructions(),
+        })
+    except Exception:
+        progress_log.append(
+            f"REPLAN FAILED for topic={topic} — LLM output could not be parsed"
+        )
+        return {**state, "progress_log": progress_log}
 
     # ── Surgical splice ────────────────────────────────────────────────────
     new_milestones = [m.model_dump() for m in updated.milestones[:2]]
