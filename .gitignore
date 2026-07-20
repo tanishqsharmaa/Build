@@ -1,5 +1,6 @@
 # CommandCode
 .commandcode/
+.commandcode
 
 # Python
 __pycache__/
@@ -29,3 +30,7 @@ build/
 # OS
 .DS_Store
 Thumbs.db
+*.log
+
+# Deploy artifacts
+.vercel
