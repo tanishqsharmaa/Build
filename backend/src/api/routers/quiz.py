@@ -22,7 +22,7 @@ import logging
 from fastapi import APIRouter, HTTPException
 
 from src.agents.daily_checkin.quiz_graph import quiz_graph
-from src.api.schemas import QuizResponse, SubmitRequest, SubmitResponse
+from src.api.schemas import QuizResponse, QuizResultResponse, SubmitRequest, SubmitResponse
 from src.db.client import get_supabase
 
 router = APIRouter()
@@ -125,4 +125,36 @@ async def submit_quiz(body: SubmitRequest) -> SubmitResponse:
         recommendation=qr["recommendation"],
         per_question=qr["per_question"],
         summary_feedback=qr["summary_feedback"],
+    )
+
+
+@router.get("/{quiz_id}/result", response_model=QuizResultResponse)
+async def get_result(quiz_id: str) -> QuizResultResponse:
+    """Fetch stored quiz score + recommendation (no LLM call).
+
+    Used by the results page on reload — score and recommendation are
+    persisted to quiz_results at submit time. per_question feedback is
+    NOT stored (memory-only), so the reloaded view shows the score ring
+    + result banner but no per-question breakdown.
+    """
+    quiz_data = _fetch_quiz_row(quiz_id)
+    if quiz_data is None:
+        raise HTTPException(status_code=404, detail="Quiz not found")
+
+    supabase = get_supabase()
+    row = (
+        supabase.table("quiz_results")
+        .select("score, recommendation")
+        .eq("quiz_id", quiz_id)
+        .maybe_single()
+        .execute()
+    )
+
+    if not row.data or row.data.get("score") is None:
+        raise HTTPException(status_code=404, detail="Quiz not yet submitted")
+
+    return QuizResultResponse(
+        quiz_id=quiz_id,
+        overall_score=row.data["score"],
+        recommendation=row.data.get("recommendation", "review"),
     )

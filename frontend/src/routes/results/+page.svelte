@@ -5,12 +5,17 @@
 
 <script>
   import { onMount }  from 'svelte';
+  import { page }     from '$app/stores';
   import { goto }     from '$app/navigation';
+
+  const API_URL    = import.meta.env.VITE_API_URL;
 
   let result        = null;
   let score         = 0;
   let animatedScore = 0;
   let expanded      = {};   // { questionIndex: boolean } for accordion
+  let loading       = true;
+  let errorMsg      = '';
 
   // SVG ring constants
   const R = 54;
@@ -18,12 +23,42 @@
   $: dash = C - (animatedScore / 100) * C;
   $: ringColor = result?.recommendation === 'advance' ? '#00d4aa' : '#f59e0b';
 
-  onMount(() => {
-    const raw = sessionStorage.getItem('quiz_result');
-    if (!raw) { goto('/dashboard'); return; }
+  onMount(async () => {
+    const quizId = $page.url.searchParams.get('id') ?? '';
 
-    result = JSON.parse(raw);
+    // Try sessionStorage first (normal flow: submit → redirect)
+    const raw = sessionStorage.getItem('quiz_result');
+    if (raw) {
+      try {
+        result = JSON.parse(raw);
+      } catch {
+        sessionStorage.removeItem('quiz_result');
+      }
+    }
+
+    // Fallback: fetch stored score from API (reload or shared link)
+    if (!result && quizId && API_URL) {
+      try {
+        const res = await fetch(`${API_URL}/quiz/${quizId}/result`);
+        if (res.ok) {
+          result = await res.json();
+        } else {
+          errorMsg = 'Result not found. The quiz may not have been submitted yet.';
+        }
+      } catch (e) {
+        errorMsg = `Could not load results: ${e.message}`;
+      }
+    }
+
+    // Neither source worked — bail
+    if (!result) {
+      if (!errorMsg) errorMsg = 'No results available. Take a quiz first!';
+      loading = false;
+      return;
+    }
+
     score  = Math.round(result.overall_score ?? 0);
+    loading = false;
 
     // Animate counter
     let current = 0;
@@ -46,7 +81,21 @@
   <div class="container">
     <a href="/dashboard" class="back-link">← Dashboard</a>
 
-    {#if result}
+    {#if loading}
+      <div class="loading-state">
+        <div class="spinner-lg"></div>
+        <p>Loading your results…</p>
+      </div>
+
+    {:else if errorMsg}
+      <div class="error-card card">
+        <div class="err-icon">⚠️</div>
+        <h2>Could not load results</h2>
+        <p>{errorMsg}</p>
+        <a href="/dashboard" class="btn-primary">Back to Dashboard</a>
+      </div>
+
+    {:else if result}
       <!-- ── Score Ring ────────────────────────────────────────────── -->
       <div class="score-section">
         <svg
@@ -134,13 +183,6 @@
         <a href="/dashboard" class="btn-primary" id="results-back-btn">
           Back to Dashboard →
         </a>
-      </div>
-
-    {:else}
-      <!-- Loading state while sessionStorage is read -->
-      <div class="loading-state">
-        <div class="spinner-lg"></div>
-        <p>Loading your results…</p>
       </div>
     {/if}
   </div>
@@ -288,4 +330,17 @@
     animation:     spin 0.8s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Error */
+  .error-card {
+    display:         flex;
+    flex-direction:  column;
+    align-items:     center;
+    gap:             1rem;
+    text-align:      center;
+    padding:         3rem;
+  }
+  .err-icon { font-size: 2.5rem; }
+  .error-card h2 { margin: 0; font-size: 1.3rem; }
+  .error-card p  { margin: 0; color: var(--color-muted); }
 </style>

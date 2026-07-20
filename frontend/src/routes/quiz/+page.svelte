@@ -88,7 +88,7 @@
       const result = await res.json();
       // Pass result to results page via sessionStorage
       sessionStorage.setItem('quiz_result', JSON.stringify(result));
-      goto('/results');
+      goto(`/results?id=${quizId}`);
     } catch (e) {
       fetchError = `Submit error: ${e.message}`;
       submitting = false;

@@ -63,6 +63,14 @@ class SubmitResponse(BaseModel):
     summary_feedback: str
 
 
+# ── /quiz/{quiz_id}/result (reload-safe result fetch) ─────────────────────────
+
+class QuizResultResponse(BaseModel):
+    quiz_id: str
+    overall_score: float
+    recommendation: str
+
+
 # ── /report ───────────────────────────────────────────────────────────────────
 
 class ReportResponse(BaseModel):
