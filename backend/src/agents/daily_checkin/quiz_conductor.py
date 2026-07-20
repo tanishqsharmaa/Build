@@ -8,6 +8,7 @@ Public surface:
   send_links_for_all_users()                  -> None  (async, cron entry point)
 """
 import asyncio
+import functools
 import logging
 from pathlib import Path
 
@@ -26,6 +27,7 @@ _SEMAPHORE = asyncio.Semaphore(10)
 logger = logging.getLogger(__name__)
 
 
+@functools.lru_cache(maxsize=1)
 def _load_prompt() -> str:
     return _PROMPT_PATH.read_text(encoding="utf-8")
 

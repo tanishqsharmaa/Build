@@ -1,3 +1,4 @@
+import functools
 from pathlib import Path
 
 from langchain_core.output_parsers import PydanticOutputParser
@@ -13,6 +14,7 @@ _PROMPT_PATH = (
 )
 
 
+@functools.lru_cache(maxsize=1)
 def _load_prompt() -> str:
     return _PROMPT_PATH.read_text(encoding="utf-8")
 

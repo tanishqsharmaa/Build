@@ -5,6 +5,7 @@ Public surface:
   generate_report(...)                       -> str   (raw HTML)
   generate_linkedin_post(...)               -> str   (raw text)
 """
+import functools
 from pathlib import Path
 
 from langchain_core.prompts import ChatPromptTemplate
@@ -17,10 +18,12 @@ _REPORT_PROMPT_PATH = _PROMPT_DIR / "progress_report.md"
 _LINKEDIN_PROMPT_PATH = _PROMPT_DIR / "linkedin_post.md"
 
 
+@functools.lru_cache(maxsize=1)
 def _load_report_prompt() -> str:
     return _REPORT_PROMPT_PATH.read_text(encoding="utf-8")
 
 
+@functools.lru_cache(maxsize=1)
 def _load_linkedin_prompt() -> str:
     return _LINKEDIN_PROMPT_PATH.read_text(encoding="utf-8")
 

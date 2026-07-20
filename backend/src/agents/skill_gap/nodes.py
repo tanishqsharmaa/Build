@@ -1,3 +1,4 @@
+import functools
 from pathlib import Path
 
 from langchain_core.output_parsers import PydanticOutputParser
@@ -13,6 +14,7 @@ from src.retrieval.vector_store import search_job_skills
 _PROMPT_PATH = Path(__file__).parent.parent.parent / "prompts" / "skill_gap_analyzer.md"
 
 
+@functools.lru_cache(maxsize=1)
 def _load_prompt() -> str:
     return _PROMPT_PATH.read_text(encoding="utf-8")
 

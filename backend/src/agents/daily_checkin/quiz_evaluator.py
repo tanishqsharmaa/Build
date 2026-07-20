@@ -7,6 +7,7 @@ Public surface:
   send_result_email(user_email, result, topic)        -> None
   evaluate_and_route(user_id, quiz_id, answers)       -> QuizResult
 """
+import functools
 from pathlib import Path
 
 from langchain_core.output_parsers import PydanticOutputParser
@@ -20,6 +21,7 @@ from src.email.client import send_email
 _EVAL_PROMPT_PATH = Path(__file__).parent.parent.parent / "prompts" / "quiz_evaluator.md"
 
 
+@functools.lru_cache(maxsize=1)
 def _load_eval_prompt() -> str:
     return _EVAL_PROMPT_PATH.read_text(encoding="utf-8")
 

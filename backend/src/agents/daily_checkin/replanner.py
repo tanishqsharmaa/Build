@@ -6,6 +6,7 @@ the failed milestone and the next one, then splices them back into the plan.
 Public surface:
   replanner_node(state) -> SkillBridgeState   (LangGraph node)
 """
+import functools
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -22,6 +23,7 @@ _PROMPT_PATH = Path(__file__).parent.parent.parent / "prompts" / "replanner.md"
 _MAX_REWRITES = 3
 
 
+@functools.lru_cache(maxsize=1)
 def _load_prompt() -> str:
     return _PROMPT_PATH.read_text(encoding="utf-8")
 
