@@ -15,10 +15,10 @@ export const actions = {
     if (!userEmail) throw error(400, 'Email is required.');
     if (!skills.length) throw error(400, 'At least one skill is required.');
 
-    const apiUrl = env.VITE_API_URL;
-    const userId = env.VITE_TEST_USER_ID;
+    const apiUrl = env.API_URL;
+    const userId = env.TEST_USER_ID;
 
-    if (!apiUrl) throw error(500, 'VITE_API_URL not configured. Set it in .env.local.');
+    if (!apiUrl) throw error(500, 'API_URL not configured. Set it in Vercel env vars.');
 
     const body = {
       user_id:        userId,

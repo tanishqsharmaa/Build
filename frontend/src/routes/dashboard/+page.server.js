@@ -4,7 +4,7 @@ import { env } from '$env/dynamic/private';
 export const load = async () => {
   const supabaseUrl = env.SUPABASE_URL;
   const serviceKey  = env.SUPABASE_SERVICE_KEY;
-  const userId      = env.VITE_TEST_USER_ID ?? '00000000-0000-0000-0000-000000000001';
+  const userId      = env.TEST_USER_ID ?? '00000000-0000-0000-0000-000000000001';
 
   // If Supabase isn't configured yet, return empty state (dev convenience)
   if (!supabaseUrl || !serviceKey) {
