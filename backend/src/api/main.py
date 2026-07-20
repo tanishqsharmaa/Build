@@ -1,4 +1,4 @@
-"""SkillBridge FastAPI application — Sprint 6.
+"""SkillBridge FastAPI application — Sprint 6.app.include_router(session.router, prefix="/session", tags=["Session — Daily"])
 
 Endpoints:
     POST /analyze           → Agent 1 (Skill Gap Analyzer)
@@ -18,7 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
-from src.api.routers import analyze, plan, quiz, report
+from src.api.routers import analyze, plan, quiz, report, session
 from src.core.config import settings
 
 app = FastAPI(
@@ -91,6 +91,7 @@ app.add_middleware(RateLimitMiddleware)
 
 app.include_router(analyze.router, prefix="/analyze", tags=["Agent 1 — Skill Gap"])
 app.include_router(plan.router,    prefix="/plan",    tags=["Agent 2 — Learning Planner"])
+app.include_router(session.router, prefix="/session", tags=["Session — Daily"])
 app.include_router(quiz.router,    prefix="/quiz",    tags=["Agent 3b — Quiz"])
 app.include_router(report.router,  prefix="/report",  tags=["Agent 4 — Report (stub)"])
 

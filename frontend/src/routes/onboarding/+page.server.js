@@ -8,14 +8,15 @@ export const actions = {
     const rawSkills = form.get('skills')?.toString() ?? '';
     const skills    = rawSkills.split(',').map(s => s.trim()).filter(Boolean);
     const goal      = form.get('user_goal')?.toString()?.trim() ?? '';
+    const userEmail = form.get('user_email')?.toString()?.trim() ?? '';
     const hours     = parseInt(form.get('hours')?.toString() ?? '10', 10);
 
-    if (!goal)          throw error(400, 'Goal is required.');
+    if (!goal)      throw error(400, 'Goal is required.');
+    if (!userEmail) throw error(400, 'Email is required.');
     if (!skills.length) throw error(400, 'At least one skill is required.');
 
-    const apiUrl    = env.VITE_API_URL;
-    const userId    = env.VITE_TEST_USER_ID;
-    const userEmail = env.VITE_TEST_USER_EMAIL;
+    const apiUrl = env.VITE_API_URL;
+    const userId = env.VITE_TEST_USER_ID;
 
     if (!apiUrl) throw error(500, 'VITE_API_URL not configured. Set it in .env.local.');
 
@@ -59,6 +60,21 @@ export const actions = {
     } catch (e) {
       if (e.status) throw e;
       throw error(502, `Plan request failed: ${e.message}`);
+    }
+
+    // ── Step 3: Trigger daily session (morning brief + quiz email) ──────────
+    try {
+      const sr = await fetch(`${apiUrl}/session/start`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ user_id: userId }),
+      });
+      if (!sr.ok) {
+        // Non-fatal — session is for email delivery, don't block onboarding
+        console.error(`session/start failed (${sr.status}): ${await sr.text().catch(() => '')}`);
+      }
+    } catch (e) {
+      console.error(`session/start unreachable: ${e.message}`);
     }
 
     // ── Redirect to dashboard ──────────────────────────────────────────────

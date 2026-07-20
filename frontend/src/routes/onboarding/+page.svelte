@@ -9,6 +9,7 @@
   let { form } = $props(); // populated by SvelteKit on action error
 
   let goal        = $state('');
+  let userEmail   = $state('');
   let skillInput  = $state('');
   let skills      = $state([]);
   let hours       = $state(15);
@@ -28,7 +29,7 @@
     skills = skills.filter(sk => sk !== s);
   }
 
-  let canSubmit = $derived(goal.trim().length > 0 && (skills.length > 0 || skillInput.trim().length > 0) && !loading);
+  let canSubmit = $derived(goal.trim().length > 0 && userEmail.trim().length > 0 && (skills.length > 0 || skillInput.trim().length > 0) && !loading);
 </script>
 
 <div class="page">
@@ -86,6 +87,25 @@
           required
           autocomplete="off"
         />
+      </div>
+
+      <!-- Email -->
+      <div class="field">
+        <label for="user_email" class="field-label">
+          Your email
+          <span class="required" aria-hidden="true">*</span>
+        </label>
+        <input
+          id="user_email"
+          name="user_email"
+          type="email"
+          class="field-input"
+          placeholder="you@example.com"
+          bind:value={userEmail}
+          required
+          autocomplete="email"
+        />
+        <p class="field-hint">We'll send your morning brief and daily quiz link here.</p>
       </div>
 
       <!-- Skills chips -->
