@@ -183,40 +183,66 @@ async def send_links_for_all_users() -> None:
     supabase = get_supabase()
     today = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d")
 
-    # Fetch active plans + the day's quiz_results row (created by morning brief)
-    rows = (
+    # Fetch today's quiz_results rows (created by morning brief)
+    quiz_rows = (
         supabase.table("quiz_results")
-        .select(
-            "quiz_id, user_id, questions, "
-            "learning_plans!inner(milestones, current_milestone_index), "
-            "profiles!inner(email)"
-        )
+        .select("quiz_id, user_id, questions")
         .gte("sent_at", f"{today}T00:00:00+00:00")
         .execute()
     )
 
-    async def _run_one(row: dict) -> None:
-        async with _SEMAPHORE:
-            user = {
-                "id": row["user_id"],
-                "email": row["profiles"]["email"],
-                "quiz_id": row["quiz_id"],
-                "milestones": row["learning_plans"]["milestones"],
-                "current_milestone_index": row["learning_plans"][
-                    "current_milestone_index"
-                ],
-            }
+    if not quiz_rows.data:
+        logger.info("quiz_conductor batch: no quiz_results rows for today — skip")
+        return
+
+    # Fetch profiles + learning_plans separately (no FK between quiz_results and those tables)
+    user_ids = [r["user_id"] for r in quiz_rows.data]
+    # Fetch profiles in one query
+    profile_rows = (
+        supabase.table("profiles")
+        .select("id, email")
+        .in_("id", user_ids)
+        .execute()
+    )
+    profiles = {r["id"]: r for r in profile_rows.data}
+
+    # Fetch active learning plans in one query
+    plan_rows = (
+        supabase.table("learning_plans")
+        .select("user_id, milestones, current_milestone_index")
+        .in_("user_id", user_ids)
+        .eq("is_active", True)
+        .execute()
+    )
+    plans = {r["user_id"]: r for r in plan_rows.data}
+
+    # Collect users that have both a quiz row and an active plan
+    users = []
+    for quiz_row in quiz_rows.data:
+        uid = quiz_row["user_id"]
+        profile = profiles.get(uid)
+        plan = plans.get(uid)
+        if profile and plan:
+            users.append({
+                "id": uid,
+                "email": profile["email"],
+                "quiz_id": quiz_row["quiz_id"],
+                "milestones": plan["milestones"],
+                "current_milestone_index": plan["current_milestone_index"],
+            })
+
+    async def _run_one(user: dict) -> None:
             try:
                 run_quiz_conductor(user)
             except Exception as exc:  # noqa: BLE001 — log and continue batch
                 logger.error("quiz_conductor failed for user=%s: %s", user["id"], exc, exc_info=True)
 
     results = await asyncio.gather(
-        *[_run_one(r) for r in rows.data],
+        *[_run_one(u) for u in users],
         return_exceptions=True,
     )
     failed = sum(1 for r in results if isinstance(r, Exception))
     if failed:
-        logger.warning("quiz_conductor batch: %d/%d failed", failed, len(rows.data))
+        logger.warning("quiz_conductor batch: %d/%d failed", failed, len(users))
     else:
-        logger.info("quiz_conductor batch: %d users processed", len(rows.data))
+        logger.info("quiz_conductor batch: %d users processed", len(users))
