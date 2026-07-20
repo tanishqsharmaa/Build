@@ -11,7 +11,7 @@ def send_email(to: str, subject: str, html: str) -> None:
     """
     resend_sdk.api_key = settings.resend_api_key
     resend_sdk.Emails.send({
-        "from": "SkillBridge <briefs@skillbridge.app>",
+        "from": "SkillBridge <onboarding@resend.dev>",
         "to": to,
         "subject": subject,
         "html": html,
