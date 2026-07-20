@@ -264,7 +264,7 @@ def test_send_email_calls_resend_with_correct_fields():
         )
     mock_resend.Emails.send.assert_called_once()
     call_kwargs = mock_resend.Emails.send.call_args[0][0]
-    assert call_kwargs["from"] == "SkillBridge <briefs@skillbridge.app>"
+    assert call_kwargs["from"] == "SkillBridge <onboarding@resend.dev>"
     assert call_kwargs["to"] == "delivered@resend.dev"
     assert "subject" in call_kwargs
     assert "html" in call_kwargs

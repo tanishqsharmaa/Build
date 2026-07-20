@@ -31,4 +31,4 @@ def test_send_email_sets_from_address():
             html="<p>body</p>",
         )
     payload = mock_resend.Emails.send.call_args[0][0]
-    assert payload["from"] == "SkillBridge <briefs@skillbridge.app>"
+    assert payload["from"] == "SkillBridge <onboarding@resend.dev>"

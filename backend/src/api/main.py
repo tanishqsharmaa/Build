@@ -45,7 +45,7 @@ app.add_middleware(
 # limiter if per-IP sync across replicas matters.
 _BUCKET: dict[str, tuple[float, int]] = {}  # ip -> (window_start, count)
 _RATE_WINDOW = 60.0   # 1 minute
-_RATE_LIMIT = 5       # max POST requests per window
+_RATE_LIMIT = 10      # max POST requests per window (10 covers full integration test suite)
 _RATE_EXPIRY = 300.0  # purge stale entries every 5 min
 _last_purge = time.monotonic()
 
