@@ -113,14 +113,11 @@ def run_morning_brief(user: dict) -> dict | None:
     # ── Generate → render → send ────────────────────────────────────────────
     brief = generate_brief(topic=topic, milestone_description=milestone_desc)
     html = render_morning_brief(brief)
-    try:
-        send_email(
-            to=user["email"],
-            subject=f"☀️ Morning Brief: {topic}",
-            html=html,
-        )
-    except Exception as exc:
-        logger.warning("email delivery skipped (Resend): %s", exc)
+    send_email(
+        to=user["email"],
+        subject=f"☀️ Morning Brief: {topic}",
+        html=html,
+    )
 
     # ── Log idempotency sentinel to quiz_results ────────────────────────────
     # quiz_results schema: quiz_id (UNIQUE), date, questions (JSONB), sent_at

@@ -109,10 +109,7 @@ def send_quiz_email(user_email: str, quiz_id: str, topic: str) -> None:
     </body>
     </html>
     """
-    try:
-        send_email(to=user_email, subject=f"⚡ Quiz: {topic}", html=html)
-    except Exception as exc:
-        logger.warning("quiz email delivery skipped (Resend): %s", exc)
+    send_email(to=user_email, subject=f"⚡ Quiz: {topic}", html=html)
 
 
 # ── Per-user runner ────────────────────────────────────────────────────────────
