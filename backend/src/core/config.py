@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     supabase_service_key: str
     resend_api_key: str
     langsmith_api_key: str
-    allowed_origins: str = "https://skillbridge.app"
+    allowed_origins: str = "http://localhost:5173,http://localhost:5174,https://skillbridge.app"
 
     model_config = SettingsConfigDict(
         env_file=".env",
