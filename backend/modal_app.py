@@ -28,6 +28,8 @@ image = (
     modal.Image.debian_slim(python_version="3.11")
     .pip_install_from_pyproject("pyproject.toml")
     .add_local_python_source("src")
+    .add_local_dir("src/prompts", "/root/src/prompts")
+    .add_local_dir("src/email/templates", "/root/src/email/templates")
 )
 
 # ── Secrets (from Modal dashboard → https://modal.com/secrets) ───────────────
