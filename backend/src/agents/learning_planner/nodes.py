@@ -48,7 +48,7 @@ def plan_milestones(state: SkillBridgeState) -> SkillBridgeState:
 
     chain = prompt | llm | parser
 
-    milestone_list: MilestoneList = chain.invoke({
+    milestone_list: MilestoneList = invoke_llm_with_retry(chain, {
         "total_weeks": report["recommended_timeline_weeks"],
         "hours": hours,
         "skills_summary": skills_summary,
