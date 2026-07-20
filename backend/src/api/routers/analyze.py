@@ -3,12 +3,15 @@
 Builds SkillBridgeState from request body, invokes skill_gap_graph,
 and returns the SkillGapReport written to state by safety_net node.
 """
+import logging
+
 from fastapi import APIRouter, HTTPException
 
 from src.agents.skill_gap.graph import skill_gap_graph
 from src.api.schemas import AnalyzeRequest, AnalyzeResponse
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 @router.post("/", response_model=AnalyzeResponse)
@@ -24,7 +27,8 @@ async def analyze_skills(body: AnalyzeRequest) -> AnalyzeResponse:
     try:
         result = await skill_gap_graph.ainvoke(state)
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        logger.exception("analyze_skills failed for user=%s", body.user_id)
+        raise HTTPException(status_code=500, detail="Internal server error. Our team has been notified.") from exc
 
     report = result["skill_gap_report"]
     return AnalyzeResponse(

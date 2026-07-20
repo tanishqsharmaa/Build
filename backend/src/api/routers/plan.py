@@ -3,12 +3,15 @@
 Accepts the skill_gap_report from /analyze as part of the request body,
 invokes learning_planner_graph, and returns the MilestoneList.
 """
+import logging
+
 from fastapi import APIRouter, HTTPException
 
 from src.agents.learning_planner.graph import learning_planner_graph
 from src.api.schemas import PlanRequest, PlanResponse
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 @router.post("/", response_model=PlanResponse)
@@ -25,7 +28,8 @@ async def create_plan(body: PlanRequest) -> PlanResponse:
     try:
         result = await learning_planner_graph.ainvoke(state)
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        logger.exception("create_plan failed for user=%s", body.user_id)
+        raise HTTPException(status_code=500, detail="Internal server error. Our team has been notified.") from exc
 
     plan = result["learning_plan"]
     return PlanResponse(

@@ -17,6 +17,8 @@ Note on Supabase queries:
     Two-step queries (quiz_results then learning_plans) avoid the PGRST200
     join error — the two tables share no direct FK (both FK to profiles.id).
 """
+import logging
+
 from fastapi import APIRouter, HTTPException
 
 from src.agents.daily_checkin.quiz_graph import quiz_graph
@@ -24,6 +26,7 @@ from src.api.schemas import QuizResponse, SubmitRequest, SubmitResponse
 from src.db.client import get_supabase
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 def _fetch_quiz_row(quiz_id: str) -> dict | None:
@@ -113,7 +116,8 @@ async def submit_quiz(body: SubmitRequest) -> SubmitResponse:
     try:
         result = await quiz_graph.ainvoke(state)
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        logger.exception("submit_quiz failed for quiz_id=%s", body.quiz_id)
+        raise HTTPException(status_code=500, detail="Internal server error. Our team has been notified.") from exc
 
     qr = result["quiz_result"]
     return SubmitResponse(

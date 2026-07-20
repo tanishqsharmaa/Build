@@ -2,13 +2,15 @@
 
 No business logic here — pure data contracts between HTTP layer and agents.
 """
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+UUID_RE = r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
 
 
 # ── /analyze ──────────────────────────────────────────────────────────────────
 
 class AnalyzeRequest(BaseModel):
-    user_id: str
+    user_id: str = Field(..., pattern=UUID_RE)
     user_email: str
     user_goal: str
     current_skills: list[str]
@@ -24,7 +26,7 @@ class AnalyzeResponse(BaseModel):
 # ── /plan ─────────────────────────────────────────────────────────────────────
 
 class PlanRequest(BaseModel):
-    user_id: str
+    user_id: str = Field(..., pattern=UUID_RE)
     user_email: str
     user_goal: str
     current_skills: list[str]
@@ -48,7 +50,7 @@ class QuizResponse(BaseModel):
 # ── /submit ───────────────────────────────────────────────────────────────────
 
 class SubmitRequest(BaseModel):
-    user_id: str
+    user_id: str = Field(..., pattern=UUID_RE)
     user_email: str
     quiz_id: str
     answers: list[int]              # student's selected option indices (0-indexed)
