@@ -86,8 +86,16 @@ def safety_net(state: SkillBridgeState) -> SkillBridgeState:
         report_dict["recommended_timeline_weeks"] = 24
         log.append("safety_net: readiness < 20% → forced timeline to 24 weeks")
 
-    # Insert final (possibly corrected) report into Supabase
+    # Ensure profiles row exists before inserting skill_gaps (FK constraint)
     supabase = get_supabase()
+    supabase.table("profiles").upsert({
+        "id": state["user_id"],
+        "email": state.get("user_email", ""),
+        "goal": state.get("user_goal", ""),
+        "hours_per_week": state.get("hours_per_week", 10),
+    }).execute()
+
+    # Insert final (possibly corrected) report into Supabase
     supabase.table("skill_gaps").insert({
         "user_id": state["user_id"],
         "skill_gap_report": report_dict,
