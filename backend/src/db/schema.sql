@@ -96,12 +96,14 @@ CREATE TABLE IF NOT EXISTS job_skills (
     embedding        vector(768)   -- gemini-embedding-001 output dimension
 );
 
--- NOTE: Run the IVFFlat index AFTER embed_job_skills.py has seeded >= 100 rows.
--- Uncomment and run this block after seeding:
+-- The IVFFlat index must be created AFTER embed_job_skills.py has seeded >= 100 rows.
+-- Run this in Supabase SQL editor after the seeder completes successfully:
 --
--- CREATE INDEX IF NOT EXISTS job_skills_embedding_idx
---     ON job_skills USING ivfflat (embedding vector_cosine_ops)
---     WITH (lists = 10);
+--   CREATE INDEX IF NOT EXISTS job_skills_embedding_idx
+--       ON job_skills USING ivfflat (embedding vector_cosine_ops)
+--       WITH (lists = 10);
+--
+-- The embed_job_skills.py script also prints this SQL as a reminder.
 
 
 -- ── 6. weekly_reports ─────────────────────────────────────────
