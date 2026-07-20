@@ -57,8 +57,9 @@ def plan_milestones(state: SkillBridgeState) -> SkillBridgeState:
         "format_instructions": parser.get_format_instructions(),
     })
 
-    # Persist to learning_plans
+    # Deactivate any existing active plan for this user, then insert new one
     supabase = get_supabase()
+    supabase.table("learning_plans").update({"is_active": False}).eq("user_id", state["user_id"]).eq("is_active", True).execute()
     supabase.table("learning_plans").insert({
         "user_id": state["user_id"],
         "milestones": [m.model_dump() for m in milestone_list.milestones],
