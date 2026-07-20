@@ -1,29 +1,31 @@
-# Environment
-.env
-.env.local
-.env.*.local
+# CommandCode
+.commandcode/
 
 # Python
 __pycache__/
-*.pyc
-*.pyo
-.pytest_cache/
-.venv/
-dist/
+*.py[cod]
 *.egg-info/
+dist/
+.venv/
 virt/
+*.egg
 
-# Node
+# Environment
+.env
+.env.local
+
+# Node / SvelteKit
 node_modules/
 .svelte-kit/
 build/
+.vite/
 
-# IDE & OS
+# IDE
 .vscode/
 .idea/
+*.swp
+*.swo
+
+# OS
 .DS_Store
 Thumbs.db
-*.log
-
-# Deploy artifacts
-.vercel
