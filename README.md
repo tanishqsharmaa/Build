@@ -2,7 +2,7 @@
 
 > **"ChatGPT tells you what to learn. SkillBridge sends you a cheat sheet at breakfast, tests you after school, and automatically rewrites your roadmap when you fail."**
 
-**SDG 4 — Quality Education** · AICTE AI Automation & Intelligent Solutions · IBM SkillsBuild 2026
+**SDG 4 — Quality Education** · 
 
 ---
 
@@ -166,15 +166,5 @@ See [`../documentation/sprint_tracker.md`](../documentation/sprint_tracker.md) f
 
 ---
 
-## Submission Checklist
 
-| Item | Status |
-|------|--------|
-| IBM SkillsBuild certificate uploaded | ⬜ |
-| Lean Canvas PDF exported | ⬜ |
-| Project PPT submitted | ⬜ |
-| Live Vercel URL in PPT | ⬜ |
-| LangSmith trace screenshots | ⬜ |
-| Agent 3b conditional edge proof | ⬜ |
 
-**Submission deadline:** 20 July 2026
